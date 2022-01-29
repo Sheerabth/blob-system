@@ -1,20 +1,25 @@
+from typing import Optional, List
 from pydantic import BaseModel
+
+from server.schemas.userfile import UserFileBaseSchema
 
 
 class FileBase(BaseModel):
-    filename: str
+    file_name: str
 
 
 class FileCreateSchema(FileBase):
     pass
 
 
-class FileSchema(FileBase):
-    id: int
-    file_path: str
-    file_size: float
-    access_id: int
-    is_owner: bool
+class FileSchema(FileCreateSchema):
+    id: str
+    file_size: Optional[float] = None
+    file_path: Optional[str] = None
 
     class Config:
         orm_mode = True
+
+
+class FileAccessSchema(FileSchema):
+    users: Optional[List[UserFileBaseSchema]]

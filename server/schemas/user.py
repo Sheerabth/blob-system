@@ -1,5 +1,7 @@
+from typing import Optional, List
 from pydantic import BaseModel
-from schemas import File
+
+from server.schemas.userfile import UserFileSchema
 
 
 class UserBase(BaseModel):
@@ -11,9 +13,12 @@ class UserCreateSchema(UserBase):
 
 
 class UserSchema(UserBase):
-    id: int
-    is_active: bool
-    files: list[File] = []
+    id: str
+    latest_time: str
 
     class Config:
         orm_mode = True
+
+
+class UserAccessSchema(UserSchema):
+    files: Optional[List[UserFileSchema]]
