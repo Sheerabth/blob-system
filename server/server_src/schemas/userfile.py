@@ -22,4 +22,3 @@ class UserFileInfoSchema(UserFileSchema):
 
 class UserInfoFileSchema(UserFileSchema):
     user: Optional[object]
-

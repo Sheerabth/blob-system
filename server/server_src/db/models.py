@@ -9,16 +9,16 @@ from datetime import datetime
 
 
 class Permissions(str, enum.Enum):
-    owner = 'owner'
-    read = 'read'
-    edit = 'edit'
+    owner = "owner"
+    read = "read"
+    edit = "edit"
 
 
 class UserFileModel(Base):
     __tablename__ = "userfile"
 
-    user_id = Column(String, ForeignKey('users.id', ondelete="CASCADE"), primary_key=True)
-    file_id = Column(String, ForeignKey('files.id', ondelete="CASCADE"), primary_key=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    file_id = Column(String, ForeignKey("files.id", ondelete="CASCADE"), primary_key=True)
     access_type = Column(Enum(Permissions))
     file = relationship("FileModel", back_populates="users")
     user = relationship("UserModel", back_populates="files")

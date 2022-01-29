@@ -3,11 +3,13 @@ from typing import Optional
 
 class Error(Exception):
     """Base class for other exceptions"""
+
     pass
 
 
 class TokenFileNotFound(Error):
     """Base exception for token file not found"""
+
     pass
 
 

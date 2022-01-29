@@ -19,7 +19,12 @@ router = APIRouter(default_response_class=JSONResponse)
 
 
 @router.post("/login")
-def login(response: Response, form_data: UserCreateSchema, db: Session = Depends(get_db), key_store: Redis = Depends(get_connection)):
+def login(
+    response: Response,
+    form_data: UserCreateSchema,
+    db: Session = Depends(get_db),
+    key_store: Redis = Depends(get_connection),
+):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
 
@@ -37,7 +42,12 @@ def login(response: Response, form_data: UserCreateSchema, db: Session = Depends
 
 
 @router.post("/register")
-def register(response: Response, form_data: UserCreateSchema, db: Session = Depends(get_db), key_store: Redis = Depends(get_connection)):
+def register(
+    response: Response,
+    form_data: UserCreateSchema,
+    db: Session = Depends(get_db),
+    key_store: Redis = Depends(get_connection),
+):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
 
@@ -62,7 +72,11 @@ def refresh(response: Response, user: UserSchema = Depends(verify_refresh_token)
 
 
 @router.get("/logout")
-def logout(refresh_token: Optional[str] = Cookie(None), user: UserSchema = Depends(verify_refresh_token), key_store: Redis = Depends(get_connection)):
+def logout(
+    refresh_token: Optional[str] = Cookie(None),
+    user: UserSchema = Depends(verify_refresh_token),
+    key_store: Redis = Depends(get_connection),
+):
     remove_refresh_token(key_store, refresh_token)
 
 

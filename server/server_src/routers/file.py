@@ -15,8 +15,17 @@ from server_src.middleware.auth import verify_access_token
 from server_src.schemas.file import FileSchema, FileAccessSchema
 from server_src.schemas.user import UserSchema
 from server_src.schemas.userfile import UserFileInfoSchema, UserFileSchema
-from server_src.services.file import create_user_file, edit_user_file, get_user_file, change_file_access, add_file_access, \
-    remove_file_access, delete_user_file, get_user_files, get_file_info
+from server_src.services.file import (
+    create_user_file,
+    edit_user_file,
+    get_user_file,
+    change_file_access,
+    add_file_access,
+    remove_file_access,
+    delete_user_file,
+    get_user_files,
+    get_file_info,
+)
 from server_src.config import FILE_BASE_PATH
 from server_src.db.models import Permissions
 from server_src.services.user import get_user
@@ -26,12 +35,16 @@ router = APIRouter(default_response_class=JSONResponse, dependencies=[Depends(ge
 
 
 @router.post("/", response_model=FileSchema)
-def create_upload_file(input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+def create_upload_file(
+    input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
+):
     file = create_user_file(db, user.id, input_file.filename)
 
     shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file.id, "wb"))
 
-    file = edit_user_file(db, file.id, file_size=os.stat(FILE_BASE_PATH + file.id).st_size, file_path=FILE_BASE_PATH + file.id)
+    file = edit_user_file(
+        db, file.id, file_size=os.stat(FILE_BASE_PATH + file.id).st_size, file_path=FILE_BASE_PATH + file.id
+    )
     return file
 
 
@@ -72,7 +85,9 @@ def file_access_info(file_id: str, user: UserSchema = Depends(verify_access_toke
 
 
 @router.patch("/{file_id}", response_model=FileSchema)
-def rename_file(file_id: str, file_name: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+def rename_file(
+    file_id: str, file_name: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
+):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
         raise NotFoundException(detail="Requested file not found")
@@ -84,7 +99,9 @@ def rename_file(file_id: str, file_name: str, user: UserSchema = Depends(verify_
 
 
 @router.put("/{file_id}", response_model=FileSchema)
-def edit_file(file_id: str, input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+def edit_file(
+    file_id: str, input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
+):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
         raise NotFoundException(detail="Requested file not found")
@@ -94,12 +111,24 @@ def edit_file(file_id: str, input_file: UploadFile, user: UserSchema = Depends(v
 
     shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file_id, "wb"))
 
-    file = edit_user_file(db, file_id, file_name=input_file.filename, file_size=os.stat(FILE_BASE_PATH + file_id).st_size, file_path=FILE_BASE_PATH + file_id)
+    file = edit_user_file(
+        db,
+        file_id,
+        file_name=input_file.filename,
+        file_size=os.stat(FILE_BASE_PATH + file_id).st_size,
+        file_path=FILE_BASE_PATH + file_id,
+    )
     return file
 
 
 @router.patch("/access/{file_id}", response_model=UserFileSchema)
-def change_access(user_id: str, file_id: str, access_type: Permissions, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+def change_access(
+    user_id: str,
+    file_id: str,
+    access_type: Permissions,
+    user: UserSchema = Depends(verify_access_token),
+    db: Session = Depends(get_db),
+):
     if user_id == user.id:
         raise ForbiddenException(detail="Trying to change your own permission")
 
@@ -126,7 +155,9 @@ def change_access(user_id: str, file_id: str, access_type: Permissions, user: Us
 
 
 @router.delete("/access/{file_id}", response_model=UserFileSchema)
-def remove_access(user_id: str, file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+def remove_access(
+    user_id: str, file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
+):
     if user_id == user.id:
         raise ForbiddenException(detail="Trying to change your own permission")
 

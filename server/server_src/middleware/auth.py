@@ -12,11 +12,16 @@ from server_src.config import REFRESH_TOKEN_SECRET, ALGORITHM, ACCESS_TOKEN_SECR
 from server_src.db.database import get_db
 from server_src.exceptions.api import InvalidCredentialsException
 from server_src.schemas.token import PayloadSchema
+from server_src.schemas.user import UserSchema
 from server_src.services.token import check_refresh_token
 from server_src.services.user import get_user
 
 
-def verify_refresh_token(db: Session = Depends(get_db), key_store: Redis = Depends(get_connection), refresh_token: Optional[str] = Cookie(None)):
+def verify_refresh_token(
+    db: Session = Depends(get_db),
+    key_store: Redis = Depends(get_connection),
+    refresh_token: Optional[str] = Cookie(None),
+) -> UserSchema:
     if refresh_token is None or not check_refresh_token(key_store, refresh_token):
         raise InvalidCredentialsException
 
@@ -36,7 +41,7 @@ def verify_refresh_token(db: Session = Depends(get_db), key_store: Redis = Depen
     return user
 
 
-def verify_access_token(db: Session = Depends(get_db), access_token: Optional[str] = Cookie(None)):
+def verify_access_token(db: Session = Depends(get_db), access_token: Optional[str] = Cookie(None)) -> UserSchema:
     if access_token is None:
         raise InvalidCredentialsException
 

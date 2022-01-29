@@ -7,7 +7,6 @@ from functools import wraps
 
 
 def exception_handler(api_function):
-
     @wraps(api_function)
     def inner(*args, **kwargs):
 
@@ -28,4 +27,3 @@ def exception_handler(api_function):
         raise typer.Exit(code=1)
 
     return inner
-
