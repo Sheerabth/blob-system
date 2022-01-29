@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 
-from server_src.db.models import FileModel, UserFileModel, Permissions, LoadingType
+from server_src.db.models import FileModel, UserFileModel, Permissions
 
 
 def create_user_file(db: Session, user_id: str, file_name: str):
@@ -32,22 +32,15 @@ def edit_user_file(db: Session, file_id: str, file_size: Optional[float] = None,
     return file
 
 
-def get_file_info(db: Session, file_id: str, loading_type: Optional[LoadingType] = LoadingType.lazy):
-    if loading_type == LoadingType.eager:
-        return db.query(FileModel).filter(FileModel.id == file_id).options(joinedload(FileModel.users)).first()
-
+def get_file_info(db: Session, file_id: str):
     return db.query(FileModel).filter(FileModel.id == file_id).first()
 
 
-def get_user_files(db: Session, user_id: str, loading_type: Optional[LoadingType] = LoadingType.lazy):
-    if loading_type == LoadingType.eager:
-        return db.query(UserFileModel).filter(UserFileModel.user_id == user_id).options(joinedload(UserFileModel.file)).all()
+def get_user_files(db: Session, user_id: str):
     return db.query(UserFileModel).filter(UserFileModel.user_id == user_id).all()
 
 
-def get_user_file(db: Session, user_id: str, file_id: str, loading_type: Optional[LoadingType] = LoadingType.lazy):
-    if loading_type == LoadingType.eager:
-        return db.query(UserFileModel).filter(UserFileModel.user_id == user_id, UserFileModel.file_id == file_id).options(joinedload(UserFileModel.file)).first()
+def get_user_file(db: Session, user_id: str, file_id: str):
     return db.query(UserFileModel).filter(UserFileModel.user_id == user_id, UserFileModel.file_id == file_id).first()
 
 

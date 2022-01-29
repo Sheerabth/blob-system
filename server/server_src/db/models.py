@@ -14,11 +14,6 @@ class Permissions(str, enum.Enum):
     edit = 'edit'
 
 
-class LoadingType(str, enum.Enum):
-    eager = 'eager'
-    lazy = 'lazy'
-
-
 class UserFileModel(Base):
     __tablename__ = "userfile"
 
