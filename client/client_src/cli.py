@@ -68,6 +68,7 @@ def refresh():
 def logout():
     refresh_token = get_token(TokenType.refresh_token)
     logout_user(refresh_token)
+    typer.echo("Logout successful")
 
 
 @app.command()
@@ -75,6 +76,7 @@ def logout():
 def logout_all():
     refresh_token = get_token(TokenType.refresh_token)
     logout_all_users(refresh_token)
+    typer.echo("Logout successful")
 
 
 @app.command()
@@ -91,7 +93,9 @@ def get_files():
 def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
     input_file = open(file_path, 'rb')
     access_token = get_token(TokenType.access_token)
-    upload_user_file(access_token, input_file)
+    file = upload_user_file(access_token, input_file)
+    typer.echo("File uploaded")
+    typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
 
 
 @app.command()
