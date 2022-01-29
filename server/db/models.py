@@ -1,28 +1,49 @@
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
+import uuid
+
+from sqlalchemy import Column, Float, ForeignKey, String, Enum
 from sqlalchemy.orm import relationship
+import enum
 
 from .database import Base
+from datetime import datetime
+
+
+class Permissions(str, enum.Enum):
+    owner = 'owner'
+    read = 'read'
+    edit = 'edit'
+
+
+class LoadingType(str, enum.Enum):
+    eager = 'eager'
+    lazy = 'lazy'
+
+
+class UserFileModel(Base):
+    __tablename__ = "userfile"
+
+    user_id = Column(String, ForeignKey('users.id', ondelete="CASCADE"), primary_key=True)
+    file_id = Column(String, ForeignKey('files.id', ondelete="CASCADE"), primary_key=True)
+    access_type = Column(Enum(Permissions))
+    file = relationship("FileModel", back_populates="users")
+    user = relationship("UserModel", back_populates="files")
 
 
 class UserModel(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    username = Column(String, index=True)
     hashed_password = Column(String)
-    is_active = Column(Boolean, default=True)
-
-    files = relationship("File", back_populates="owner")
+    latest_time = Column(String, default=lambda: datetime.utcnow().isoformat())
+    files = relationship("UserFileModel", back_populates="user")
 
 
 class FileModel(Base):
     __tablename__ = "files"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     file_name = Column(String, index=True)
     file_size = Column(Float)
     file_path = Column(String, index=True)
-    access_id = Column(Integer, ForeignKey("users.id"))
-    is_owner = Column(Boolean, default=False)
-
-    owner = relationship("User", back_populates="items")
+    users = relationship("UserFileModel", back_populates="file")
