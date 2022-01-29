@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional
 import typer
-
+from passlib.context import CryptContext
 
 from client_src import __app_name__, __version__
 from client_src.exceptions.handler import exception_handler
@@ -38,7 +38,8 @@ def main(
 @app.command()
 @exception_handler
 def register(username: str, password: str = typer.Option(..., prompt="Enter your password")):
-    response_content = register_user(username, password)
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    response_content = register_user(username, pwd_context.hash(password))
     set_tokens(response_content['tokens'])
     typer.echo("Register successful")
     typer.echo(f"User Id: {response_content['user_id']}")
@@ -47,7 +48,8 @@ def register(username: str, password: str = typer.Option(..., prompt="Enter your
 @app.command()
 @exception_handler
 def login(username: str, password: str = typer.Option(..., prompt="Enter your password")):
-    response_content = login_user(username, password)
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    response_content = login_user(username, pwd_context.hash(password))
     set_tokens(response_content['tokens'])
     typer.echo("Login successful")
     typer.echo(f"User Id: {response_content['user_id']}")
@@ -106,13 +108,11 @@ def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=Fal
     for user_file in files:
         typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
     index = int(typer.prompt("Select your choice"))
-    with typer.progressbar(range(100)) as progress:
-        for value in progress:
-            downloaded_file = download_user_file(access_token, files[index-1]['file_id'])
-            with open(str(os.path.join(file_path, downloaded_file['file_name'])), 'wb') as target_file:
-                for chunk in downloaded_file['content']:
-                    if chunk:
-                        target_file.write(chunk)
+    downloaded_file = download_user_file(access_token, files[index-1]['file_id'])
+    with open(str(os.path.join(file_path, downloaded_file['file_name'])), 'wb') as target_file:
+        for chunk in downloaded_file['content']:
+            if chunk:
+                target_file.write(chunk)
     typer.echo("Download successful")
 
 

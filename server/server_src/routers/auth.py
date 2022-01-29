@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Response, Cookie
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from redis import Redis
+from passlib.context import CryptContext
 
 from server_src.cache.cache_client import get_connection
 from server_src.db.database import get_db
@@ -19,7 +20,9 @@ router = APIRouter(default_response_class=JSONResponse)
 
 @router.post("/login")
 def login(response: Response, form_data: UserCreateSchema, db: Session = Depends(get_db), key_store: Redis = Depends(get_connection)):
-    user = get_user_by_username(db, form_data.username, form_data.password)
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
+
     if not user:
         raise InvalidCredentialsException
     access_token = create_access_token(data={"username": user.username, "user_id": user.id})
@@ -35,7 +38,9 @@ def login(response: Response, form_data: UserCreateSchema, db: Session = Depends
 
 @router.post("/register")
 def register(response: Response, form_data: UserCreateSchema, db: Session = Depends(get_db), key_store: Redis = Depends(get_connection)):
-    user = get_user_by_username(db, form_data.username, form_data.password)
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
+
     if user:
         raise InvalidCredentialsException
     user = create_user(db, form_data)
