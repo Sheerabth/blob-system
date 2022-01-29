@@ -3,8 +3,7 @@ from pathlib import Path
 from os import path
 
 from client_src.config import TOKEN_FILE_PATH
-from client_src.exceptions.file import TokenFileNotFound
-from client_src.exceptions.api import UnauthorizedAPIException, TokenExpiredException
+from client_src.exceptions import TokenFileNotFound
 from client_src.extras.token import TokenType
 
 
@@ -35,11 +34,6 @@ def set_token(token_type: TokenType, cookies):
         token_file_path = TOKEN_FILE_PATH
     else:
         token_file_path = path.join(Path.home(), "tokens.json")
-
-    if token_type not in cookies:
-        if token_type == TokenType.access_token:
-            raise TokenExpiredException
-        raise UnauthorizedAPIException
 
     try:
         with open(token_file_path, 'r+') as token_file:

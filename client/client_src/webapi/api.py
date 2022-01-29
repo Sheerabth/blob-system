@@ -5,7 +5,7 @@ import re
 import requests
 
 from client_src.config import URL
-from client_src.exceptions.api import APIException
+from client_src.exceptions import APIException
 from client_src.webapi.response_validator import response_validator
 
 
@@ -110,7 +110,7 @@ def change_user_access(access_token: str, user_id: str, file_id: str, access_typ
 
 
 def remove_user_access(access_token: str, user_id: str, file_id: str):
-    response = delete_request(f"/file/access{file_id}", query_params={'user_id': user_id}, cookies={'access_token': access_token})
+    response = delete_request(f"/file/access/{file_id}", query_params={'user_id': user_id}, cookies={'access_token': access_token})
     return response.json()
 
 

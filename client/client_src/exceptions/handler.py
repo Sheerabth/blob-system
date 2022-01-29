@@ -1,7 +1,8 @@
 import typer
-from client_src.exceptions.base import Error
-from client_src.exceptions.file import TokenFileNotFound, AccessTokenFileNotFound, RefreshTokenFileNotFound
-from client_src.exceptions.api import APIException, BadRequestAPIException, TokenExpiredException, UnauthorizedAPIException, ForbiddenAPIException, NotFoundAPIException
+from requests.exceptions import RequestException
+
+from client_src.exceptions import TokenFileNotFound
+from client_src.exceptions import APIException
 from functools import wraps
 
 
@@ -13,35 +14,16 @@ def exception_handler(api_function):
         try:
             api_function(*args, **kwargs)
 
-        except AccessTokenFileNotFound:
-            typer.echo("Access token file not found")
-
-        except RefreshTokenFileNotFound:
-            typer.echo("Refresh token file not found")
-
         except TokenFileNotFound:
             typer.echo("Token file not found")
 
-        except BadRequestAPIException:
-            typer.echo("Bad request")
+        except APIException as e:
 
-        except TokenExpiredException:
-            typer.echo("Token expired")
+            typer.echo(f"Error Code: {e.detail['error_code']}, Error Info: {e.detail['error_info']}")
 
-        except UnauthorizedAPIException:
-            typer.echo("Invalid credentials")
+        except RequestException:
 
-        except ForbiddenAPIException:
-            typer.echo("Request Forbidden")
-
-        except NotFoundAPIException:
-            typer.echo("Not found")
-
-        except APIException:
-            typer.echo("API exception")
-
-        except Error:
-            typer.echo("Base exception")
+            typer.echo("Cant connect to host")
 
         raise typer.Exit(code=1)
 
