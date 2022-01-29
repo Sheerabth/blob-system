@@ -123,7 +123,9 @@ def file_info():
     typer.echo(f"File Size: {file['file_size']} bytes")
     typer.echo("Access users")
     for user in file['users']:
-        typer.echo(f"User Id: {user['user_id']}, Access Type: {user['access_type']}")
+        user_info = get_user_info(access_token, user['user_id'])
+        typer.echo(
+            f"User Name: {user_info['username']}, Access Type: {user['access_type']}, User Id: {user['user_id']}")
 
 
 @app.command()
@@ -132,7 +134,8 @@ def rename_file():
     access_token = get_token(TokenType.access_token)
     files = get_user_files(access_token)
     for user_file in files:
-        typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
+        if user_file['access_type'] != "read":
+            typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
     index = int(typer.prompt("Select your choice"))
     new_file_name = typer.prompt("Enter new file name")
     file = rename_user_file(access_token, files[index - 1]['file_id'], new_file_name)
