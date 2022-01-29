@@ -15,7 +15,7 @@ from server_src.services.file import create_user_file, edit_user_file, get_user_
 from server_src.config import FILE_BASE_PATH
 from server_src.db.models import Permissions
 from server_src.services.user import get_user
-from server_src.exceptions.api import APIException
+from server_src.exceptions.api import NotFoundException, UnauthorizedException, ForbiddenException
 
 router = APIRouter(default_response_class=JSONResponse, dependencies=[Depends(get_db)])
 
@@ -41,7 +41,7 @@ def get_files(user: UserSchema = Depends(verify_access_token), db: Session = Dep
 def download_file(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise NotFoundException(detail="Requested file not found")
 
     return FileResponse(FILE_BASE_PATH + file_id, filename=user_file.file.file_name)
 
@@ -50,7 +50,7 @@ def download_file(file_id: str, user: UserSchema = Depends(verify_access_token),
 def file_access_info(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise NotFoundException(detail="Requested file not found")
 
     file = get_file_info(db, file_id)
     return file
@@ -60,29 +60,29 @@ def file_access_info(file_id: str, user: UserSchema = Depends(verify_access_toke
 def rename_file(file_id: str, file_name: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise NotFoundException(detail="Requested file not found")
 
     if user_file.access_type == Permissions.owner or user_file.access_type == Permissions.edit:
         return edit_user_file(db, user_file.file_id, file_name=file_name)
 
-    raise APIException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No rename permissions")
+    raise UnauthorizedException(detail="No rename permissions")
 
 
 @router.patch("/access/{file_id}", response_model=UserFileSchema)
 def change_access(user_id: str, file_id: str, access_type: Permissions, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     if user_id == user.id:
-        raise APIException(status_code=status.HTTP_403_FORBIDDEN, detail="Trying to change your own permission")
+        raise ForbiddenException(detail="Trying to change your own permission")
 
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise NotFoundException(detail="File not found")
 
     if user_file.access_type != Permissions.owner:
-        raise APIException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Only owners can change file permission")
+        raise UnauthorizedException(detail="Only owners can change file permission")
 
     access_user = get_user(db, user_id)
     if access_user is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise NotFoundException(detail="User not found")
 
     if access_type == Permissions.owner:
         change_file_access(db, user.id, file_id, Permissions.edit)
@@ -98,18 +98,18 @@ def change_access(user_id: str, file_id: str, access_type: Permissions, user: Us
 @router.delete("/access/{file_id}", response_model=UserFileSchema)
 def remove_access(user_id: str, file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     if user_id == user.id:
-        raise APIException(status_code=status.HTTP_403_FORBIDDEN, detail="Trying to change your own permission")
+        raise ForbiddenException(detail="Trying to change your own permission")
 
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise NotFoundException(detail="File not found")
 
     if user_file.access_type != Permissions.owner:
-        raise APIException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Owner permission required")
+        raise UnauthorizedException(detail="Owner permission required")
 
     access_user = get_user(db, user_id)
     if access_user is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise NotFoundException(detail="User not found")
 
     access_file = get_user_file(db, user_id, file_id)
 
@@ -123,11 +123,11 @@ def remove_access(user_id: str, file_id: str, user: UserSchema = Depends(verify_
 def delete_file(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise NotFoundException(detail="File not found")
 
     user_file = get_user_file(db, user.id, file_id)
     if user_file.access_type != Permissions.owner:
-        raise APIException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Owner permission required")
+        raise UnauthorizedException(detail="Owner permission required")
 
     deleted_file = delete_user_file(db, user_file.file_id)
     os.remove(deleted_file.file_path)

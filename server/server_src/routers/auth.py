@@ -1,12 +1,13 @@
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, status, Response, Cookie
+from fastapi import APIRouter, Depends, Response, Cookie
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from redis import Redis
 
 from server_src.cache.cache_client import get_connection
 from server_src.db.database import get_db
+from server_src.exceptions.api import InvalidCredentialsException
 from server_src.middleware.auth import verify_refresh_token
 from server_src.middleware.jwt import create_access_token, create_refresh_token
 from server_src.schemas.user import UserCreateSchema, UserSchema
@@ -20,10 +21,7 @@ router = APIRouter(default_response_class=JSONResponse)
 def login(response: Response, form_data: UserCreateSchema, db: Session = Depends(get_db), key_store: Redis = Depends(get_connection)):
     user = get_user_by_username(db, form_data.username, form_data.password)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect credentials",
-        )
+        raise InvalidCredentialsException
     access_token = create_access_token(data={"username": user.username, "user_id": user.id})
     refresh_token = create_refresh_token(data={"username": user.username, "user_id": user.id})
 
@@ -39,10 +37,7 @@ def login(response: Response, form_data: UserCreateSchema, db: Session = Depends
 def register(response: Response, form_data: UserCreateSchema, db: Session = Depends(get_db), key_store: Redis = Depends(get_connection)):
     user = get_user_by_username(db, form_data.username, form_data.password)
     if user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already exists",
-        )
+        raise InvalidCredentialsException
     user = create_user(db, form_data)
     access_token = create_access_token(data={"username": user.username, "user_id": user.id})
     refresh_token = create_refresh_token(data={"username": user.username, "user_id": user.id})
