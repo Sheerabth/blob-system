@@ -14,5 +14,5 @@ class TokenFileNotFound(Error):
 class APIException(Error):
     """Base exception for api exceptions"""
 
-    def __init__(self, detail: Optional[dict] = None):
+    def __init__(self, detail: Optional[dict] = "API Exception Occurred"):
         self.detail = detail
