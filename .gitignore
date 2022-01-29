@@ -111,6 +111,7 @@ dist
 ### Custom ignores
 files/
 __pycache__/
+
 *.ini
 
 # Package lock
