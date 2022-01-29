@@ -10,7 +10,7 @@ from client_src.token import set_tokens, get_token, set_token
 from client_src.extras.token import TokenType
 from client_src.webapi.api import register_user, login_user, logout_user, logout_all_users, get_user_files, \
     upload_user_file, refresh_user, download_user_file, file_access_info, rename_user_file, change_user_access, \
-    remove_user_access, get_user_info, delete_user_file
+    remove_user_access, get_user_info, delete_user_file, edit_user_file
 
 app = typer.Typer()
 
@@ -106,11 +106,13 @@ def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=Fal
     for user_file in files:
         typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
     index = int(typer.prompt("Select your choice"))
-    downloaded_file = download_user_file(access_token, files[index-1]['file_id'])
-    with open(str(os.path.join(file_path, downloaded_file['file_name'])), 'wb') as target_file:
-        for chunk in downloaded_file['content']:
-            if chunk:
-                target_file.write(chunk)
+    with typer.progressbar(range(100)) as progress:
+        for value in progress:
+            downloaded_file = download_user_file(access_token, files[index-1]['file_id'])
+            with open(str(os.path.join(file_path, downloaded_file['file_name'])), 'wb') as target_file:
+                for chunk in downloaded_file['content']:
+                    if chunk:
+                        target_file.write(chunk)
     typer.echo("Download successful")
 
 
@@ -144,8 +146,21 @@ def rename_file():
     new_file_name = typer.prompt("Enter new file name")
     file = rename_user_file(access_token, files[index - 1]['file_id'], new_file_name)
 
-    typer.echo(f"File Name: {file['file_name']}")
-    typer.echo(f"File Size: {file['file_size']} bytes")
+    typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
+
+
+@app.command()
+@exception_handler
+def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
+    input_file = open(file_path, 'rb')
+    access_token = get_token(TokenType.access_token)
+    files = get_user_files(access_token)
+    for user_file in files:
+        typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
+    index = int(typer.prompt("Select your choice"))
+    file = edit_user_file(access_token, files[index - 1]['file_id'], input_file)
+    typer.echo("File uploaded")
+    typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
 
 
 @app.command()

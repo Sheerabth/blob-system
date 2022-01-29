@@ -28,6 +28,11 @@ def patch_request(path: str, body: Optional[Dict[str, str]] = None, query_params
     return response_validator(response_body)
 
 
+def put_request(path: str, body: Optional[Dict[str, str]] = None, file: Optional[Dict[str, BinaryIO]] = None, cookies: Optional[Dict[str, str]] = None):
+    response_body = requests.put(URL + path, cookies=cookies, json=body, files=file)
+    return response_validator(response_body)
+
+
 def delete_request(path: str, body: Optional[Dict[str, str]] = None, query_params: Optional[Dict[str, str]] = None, cookies: Optional[Dict[str, str]] = None):
     response_body = requests.delete(URL + path, cookies=cookies, json=body, params=query_params)
     return response_validator(response_body)
@@ -101,6 +106,12 @@ def file_access_info(access_token: str, file_id: str):
 
 def rename_user_file(access_token: str, file_id: str, new_file_name: str):
     response = patch_request(f"/file/{file_id}", query_params={'file_name': new_file_name}, cookies={'access_token': access_token})
+    return response.json()
+
+
+def edit_user_file(access_token: str, file_id: str, input_file: BinaryIO):
+    file = {'input_file': input_file}
+    response = put_request(f"/file/{file_id}", file=file, cookies={'access_token': access_token})
     return response.json()
 
 

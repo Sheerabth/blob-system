@@ -1,9 +1,14 @@
+import gzip
+import mimetypes
 import os
+import shutil
 from typing import List
+from urllib import parse
 
-from fastapi import APIRouter, UploadFile, Depends, status
+from fastapi import APIRouter, UploadFile, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
+from starlette.responses import StreamingResponse
 
 from server_src.db.database import get_db
 from server_src.middleware.auth import verify_access_token
@@ -24,9 +29,7 @@ router = APIRouter(default_response_class=JSONResponse, dependencies=[Depends(ge
 def create_upload_file(input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     file = create_user_file(db, user.id, input_file.filename)
 
-    with input_file.file as source_file, open(FILE_BASE_PATH + file.id, "wb") as target_file:
-        for line in source_file:
-            target_file.write(line)
+    shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file.id, "wb"))
 
     file = edit_user_file(db, file.id, file_size=os.stat(FILE_BASE_PATH + file.id).st_size, file_path=FILE_BASE_PATH + file.id)
     return file
@@ -43,7 +46,19 @@ def download_file(file_id: str, user: UserSchema = Depends(verify_access_token),
     if user_file is None:
         raise NotFoundException(detail="Requested file not found")
 
-    return FileResponse(FILE_BASE_PATH + file_id, filename=user_file.file.file_name)
+    encoded = parse.quote(user_file.file.file_name)
+    if encoded == user_file.file.file_name:
+        content_disposition = {"Content-Disposition": f'attachment; filename="{encoded}"'}
+    else:
+        content_disposition = {"Content-Disposition": f"attachment; filename*=utf-8''{encoded}"}
+
+    def iter_file():
+        with gzip.open(FILE_BASE_PATH + file_id, mode="rb") as file_like:
+            yield from file_like
+
+    return StreamingResponse(iter_file(), headers=content_disposition)
+
+    # return FileResponse(FILE_BASE_PATH + file_id, filename=user_file.file.file_name)
 
 
 @router.get("/access/{file_id}", response_model=FileAccessSchema)
@@ -62,10 +77,25 @@ def rename_file(file_id: str, file_name: str, user: UserSchema = Depends(verify_
     if user_file is None:
         raise NotFoundException(detail="Requested file not found")
 
-    if user_file.access_type == Permissions.owner or user_file.access_type == Permissions.edit:
-        return edit_user_file(db, user_file.file_id, file_name=file_name)
+    if user_file.access_type == Permissions.read:
+        raise UnauthorizedException(detail="No rename permissions")
 
-    raise UnauthorizedException(detail="No rename permissions")
+    return edit_user_file(db, user_file.file_id, file_name=file_name)
+
+
+@router.put("/{file_id}", response_model=FileSchema)
+def edit_file(file_id: str, input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+    user_file = get_user_file(db, user.id, file_id)
+    if user_file is None:
+        raise NotFoundException(detail="Requested file not found")
+
+    if user_file.access_type == Permissions.read:
+        raise UnauthorizedException(detail="No edit permissions")
+
+    shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file_id, "wb"))
+
+    file = edit_user_file(db, file_id, file_name=input_file.filename, file_size=os.stat(FILE_BASE_PATH + file_id).st_size, file_path=FILE_BASE_PATH + file_id)
+    return file
 
 
 @router.patch("/access/{file_id}", response_model=UserFileSchema)
