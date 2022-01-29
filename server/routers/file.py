@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from server.db.database import get_db
-from server.middleware.auth import get_current_active_user
+from server.middleware.auth import verify_access_token
 from server.schemas.file import FileSchema, FileAccessSchema
 from server.schemas.user import UserSchema
 from server.schemas.userfile import UserFileInfoSchema, UserFileSchema
@@ -21,7 +21,7 @@ router = APIRouter(default_response_class=JSONResponse, dependencies=[Depends(ge
 
 
 @router.post("/", response_model=FileSchema)
-def create_upload_file(input_file: UploadFile, user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def create_upload_file(input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     file = create_user_file(db, user.id, input_file.filename)
 
     with input_file.file as source_file, open(FILE_BASE_PATH + file.id, "wb") as target_file:
@@ -33,12 +33,12 @@ def create_upload_file(input_file: UploadFile, user: UserSchema = Depends(get_cu
 
 
 @router.get("/", response_model=List[UserFileInfoSchema])
-def get_files(user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def get_files(user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     return get_user_files(db, user.id)
 
 
 @router.get("/download/{file_id}", response_class=FileResponse)
-def download_file(file_id: str, user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def download_file(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
         raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
@@ -47,7 +47,7 @@ def download_file(file_id: str, user: UserSchema = Depends(get_current_active_us
 
 
 @router.get("/access/{file_id}", response_model=FileAccessSchema)
-def file_access_info(file_id: str, user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def file_access_info(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
         raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
@@ -57,7 +57,7 @@ def file_access_info(file_id: str, user: UserSchema = Depends(get_current_active
 
 
 @router.patch("/{file_id}", response_model=FileSchema)
-def rename_file(file_id: str, file_name: str, user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def rename_file(file_id: str, file_name: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
         raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
@@ -69,7 +69,7 @@ def rename_file(file_id: str, file_name: str, user: UserSchema = Depends(get_cur
 
 
 @router.patch("/access/{file_id}", response_model=UserFileSchema)
-def change_access(user_id: str, file_id: str, access_type: Permissions, user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def change_access(user_id: str, file_id: str, access_type: Permissions, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     if user_id == user.id:
         raise APIException(status_code=status.HTTP_403_FORBIDDEN, detail="Trying to change your own permission")
 
@@ -96,7 +96,7 @@ def change_access(user_id: str, file_id: str, access_type: Permissions, user: Us
 
 
 @router.delete("/access/{file_id}", response_model=UserFileSchema)
-def remove_access(user_id: str, file_id: str, user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def remove_access(user_id: str, file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     if user_id == user.id:
         raise APIException(status_code=status.HTTP_403_FORBIDDEN, detail="Trying to change your own permission")
 
@@ -120,7 +120,7 @@ def remove_access(user_id: str, file_id: str, user: UserSchema = Depends(get_cur
 
 
 @router.delete("/{file_id}", response_model=FileSchema)
-def delete_file(file_id: str, user: UserSchema = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def delete_file(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
         raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
