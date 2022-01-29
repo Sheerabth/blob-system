@@ -28,6 +28,11 @@ def patch_request(path: str, body: Optional[Dict[str, str]] = None, query_params
     return response_validator(response_body)
 
 
+def delete_request(path: str, body: Optional[Dict[str, str]] = None, query_params: Optional[Dict[str, str]] = None, cookies: Optional[Dict[str, str]] = None):
+    response_body = requests.delete(URL + path, cookies=cookies, json=body, params=query_params)
+    return response_validator(response_body)
+
+
 def register_user(username: str, password: str):
     user_data = {
         "username": username,
@@ -61,6 +66,11 @@ def logout_all_users(refresh_token: str):
     return response.json()
 
 
+def get_user_info(access_token: str, user_id):
+    response = get_request(f"/user/{user_id}", cookies={'access_token': access_token})
+    return response.json()
+
+
 def get_user_files(access_token: str):
     response = get_request("/file/", cookies={'access_token': access_token})
     return response.json()
@@ -91,4 +101,19 @@ def file_access_info(access_token: str, file_id: str):
 
 def rename_user_file(access_token: str, file_id: str, new_file_name: str):
     response = patch_request(f"/file/{file_id}", query_params={'file_name': new_file_name}, cookies={'access_token': access_token})
+    return response.json()
+
+
+def change_user_access(access_token: str, user_id: str, file_id: str, access_type: str):
+    response = patch_request(f"/file/access/{file_id}", query_params={'user_id': user_id, 'access_type': access_type}, cookies={'access_token': access_token})
+    return response.json()
+
+
+def remove_user_access(access_token: str, user_id: str, file_id: str):
+    response = delete_request(f"/file/access{file_id}", query_params={'user_id': user_id}, cookies={'access_token': access_token})
+    return response.json()
+
+
+def delete_user_file(access_token: str, file_id: str):
+    response = delete_request(f"/file/{file_id}", cookies={'access_token': access_token})
     return response.json()

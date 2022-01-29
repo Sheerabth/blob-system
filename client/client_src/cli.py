@@ -9,7 +9,8 @@ from client_src.exceptions.handler import exception_handler
 from client_src.token import set_tokens, get_token, set_token
 from client_src.extras.token import TokenType
 from client_src.webapi.api import register_user, login_user, logout_user, logout_all_users, get_user_files, \
-    upload_user_file, refresh_user, download_user_file, file_access_info, rename_user_file
+    upload_user_file, refresh_user, download_user_file, file_access_info, rename_user_file, change_user_access, \
+    remove_user_access, get_user_info, delete_user_file
 
 app = typer.Typer()
 
@@ -146,10 +147,59 @@ def change_access():
     access_token = get_token(TokenType.access_token)
     files = get_user_files(access_token)
     for user_file in files:
-        typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
+        if user_file['access_type'] == "owner":
+            typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
+
     index = int(typer.prompt("Select your choice"))
     file_id = files[index - 1]['file_id']
+
+    file_info = file_access_info(access_token, file_id)
+    typer.echo("Access users")
+    for user in file_info['users']:
+        user_info = get_user_info(access_token, user['user_id'])
+        typer.echo(f"User Name: {user_info['username']}, Access Type: {user['access_type']}, User Id: {user['user_id']}")
+
+    user_id = typer.prompt("Enter user id")
+    access_type = typer.prompt("Enter permission to be provided")
+
+    result = change_user_access(access_token, user_id, file_id, access_type)
+    typer.echo(f"Access change successful")
+
+
+@app.command()
+@exception_handler
+def remove_access():
+    access_token = get_token(TokenType.access_token)
+    files = get_user_files(access_token)
+    for user_file in files:
+        if user_file['access_type'] == "owner":
+            typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
+
+    index = int(typer.prompt("Select your choice"))
+    file_id = files[index - 1]['file_id']
+
+    file_info = file_access_info(access_token, file_id)
+    typer.echo("Access users")
+    for user in file_info['users']:
+        typer.echo(f"User Id: {user['user_id']}, Access Type: {user['access_type']}")
+
     user_id = typer.prompt("Enter user id")
 
-    access_type = typer.prompt("Enter permission to be provided ()")
+    result = remove_user_access(access_token, user_id, file_id)
+    typer.echo(f"Access removal successful")
 
+
+@app.command()
+@exception_handler
+def delete_file():
+    access_token = get_token(TokenType.access_token)
+    files = get_user_files(access_token)
+    for user_file in files:
+        if user_file['access_type'] == "owner":
+            typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
+
+    index = int(typer.prompt("Select your choice"))
+    file_id = files[index - 1]['file_id']
+
+    result = delete_user_file(access_token, file_id)
+    typer.echo(f"File delete successful")
