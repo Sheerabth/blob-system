@@ -17,15 +17,16 @@ def file_prompt(access_token: str, prompt_message: Optional[str] = "Enter file i
                 indices.append(files.index(user_file) + 1)
                 typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
 
-    if not_access_type:
+    elif not_access_type:
         for user_file in files:
             if user_file["access_type"] != not_access_type:
                 indices.append(files.index(user_file) + 1)
                 typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
 
-    for user_file in files:
-        indices.append(files.index(user_file) + 1)
-        typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
+    else:
+        for user_file in files:
+            indices.append(files.index(user_file) + 1)
+            typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
 
     try:
         index = int(typer.prompt(prompt_message))
