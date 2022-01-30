@@ -2,7 +2,7 @@ from typing import Optional
 
 import typer
 
-from src.exceptions import IndexException, FileNotFoundException
+from src.exception import IndexException, FileNotFoundException
 from src.models.permission import Permission
 from src.webapi.api import get_user_files
 

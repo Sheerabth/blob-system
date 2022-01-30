@@ -27,6 +27,13 @@ class IndexException(Error):
         self.message = message
 
 
+class InvalidUserException(Error):
+    """Exception for invalid users"""
+
+    def __init__(self, message: Optional[str] = "Invalid User ID"):
+        self.message = message
+
+
 class PermissionException(Error):
     """Exception for handling invalid permissions"""
 

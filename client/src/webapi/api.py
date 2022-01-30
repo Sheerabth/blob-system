@@ -6,7 +6,7 @@ import requests
 from requests import Response
 
 from src.config import URL
-from src.exceptions import APIException
+from src.exception import APIException
 from src.webapi.response_validator import response_validator
 
 

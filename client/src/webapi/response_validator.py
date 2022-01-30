@@ -1,5 +1,5 @@
 from requests import Response
-from src.exceptions import APIException
+from src.exception import APIException
 
 
 def response_validator(response: Response) -> Response:

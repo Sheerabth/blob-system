@@ -5,8 +5,8 @@ import typer
 from passlib.context import CryptContext
 
 from src import __app_name__, __version__
-from src.exceptions import PermissionException, FileNotFoundException
-from src.exceptions.handler import exception_handler
+from src.exception import PermissionException, FileNotFoundException
+from src.exception.handler import exception_handler
 from src.models.permission import Permission
 from src.services.file import file_prompt
 from src.services.user import user_file_prompt

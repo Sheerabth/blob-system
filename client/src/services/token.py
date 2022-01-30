@@ -3,7 +3,7 @@ from pathlib import Path
 from os import path
 
 from src.config import TOKEN_FILE_PATH
-from src.exceptions import TokenFileNotFound
+from src.exception import TokenFileNotFound
 from src.models.token import TokenType
 
 
