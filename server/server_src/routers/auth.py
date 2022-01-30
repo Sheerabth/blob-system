@@ -1,4 +1,5 @@
 from typing import Optional
+import logging
 
 from fastapi import APIRouter, Depends, Response, Cookie
 from fastapi.responses import JSONResponse
@@ -16,6 +17,7 @@ from server_src.services.token import remove_refresh_token, set_refresh_token
 from server_src.services.user import get_user_by_username, create_user, logout_all_users
 
 router = APIRouter(default_response_class=JSONResponse)
+logger = logging.getLogger(__name__)
 
 
 @router.post("/login")
@@ -29,6 +31,7 @@ def login(
     user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
 
     if not user:
+        logging.error("Invalid Login")
         raise InvalidCredentialsException
     access_token = create_access_token(data={"username": user.username, "user_id": user.id})
     refresh_token = create_refresh_token(data={"username": user.username, "user_id": user.id})
@@ -52,6 +55,7 @@ def register(
     user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
 
     if user:
+        logging.error("User already exists")
         raise ForbiddenException("User already exists")
     user = create_user(db, form_data)
     access_token = create_access_token(data={"username": user.username, "user_id": user.id})
@@ -78,6 +82,7 @@ def logout(
     key_store: Redis = Depends(get_connection),
 ):
     remove_refresh_token(key_store, refresh_token)
+
 
 
 @router.get("/logout_all")

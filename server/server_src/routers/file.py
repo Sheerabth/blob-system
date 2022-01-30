@@ -1,4 +1,5 @@
 import gzip
+import logging
 from os import path, remove
 import shutil
 from typing import List
@@ -32,6 +33,7 @@ from server_src.services.user import get_user
 from server_src.exceptions.api import NotFoundException, UnauthorizedException, ForbiddenException
 
 router = APIRouter(default_response_class=JSONResponse, dependencies=[Depends(get_db)])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=FileSchema)
@@ -45,6 +47,7 @@ def upload_file(
     file = edit_user_file(
         db, file.id, file_size=path.getsize(FILE_BASE_PATH + file.id), file_path=FILE_BASE_PATH + file.id
     )
+    logger.info("New file uploaded")
     return file
 
 
@@ -61,6 +64,7 @@ async def stream_upload_file(file_name: str, request: Request, user: UserSchema 
     file = edit_user_file(
         db, file.id, file_size=path.getsize(FILE_BASE_PATH + file.id), file_path=FILE_BASE_PATH + file.id
     )
+    logger.info("New file uploaded(streamed)")
     return file
 
 
@@ -73,6 +77,7 @@ def get_files(user: UserSchema = Depends(verify_access_token), db: Session = Dep
 def download_file(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested invalid file")
         raise NotFoundException(detail="Requested file not found")
 
     encoded = parse.quote(user_file.file.file_name)
@@ -92,6 +97,7 @@ def download_file(file_id: str, user: UserSchema = Depends(verify_access_token),
     try:
         return StreamingResponse(iter_file(), headers=content_disposition)
     except IOError:
+        logger.error("File exists in database but missing in storage")
         raise NotFoundException(detail="File not found")
 
 
@@ -99,6 +105,7 @@ def download_file(file_id: str, user: UserSchema = Depends(verify_access_token),
 def file_access_info(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested invalid file")
         raise NotFoundException(detail="Requested file not found")
 
     file = get_file_info(db, file_id)
@@ -111,9 +118,11 @@ def rename_file(
 ):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested invalid file")
         raise NotFoundException(detail="Requested file not found")
 
     if user_file.access_type == Permissions.read:
+        logger.error("User requested to rename file with read permission")
         raise UnauthorizedException(detail="No rename permissions")
 
     return edit_user_file(db, user_file.file_id, file_name=file_name)
@@ -125,9 +134,11 @@ def edit_file(
 ):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested invalid file")
         raise NotFoundException(detail="Requested file not found")
 
     if user_file.access_type == Permissions.read:
+        logger.error("User requested to edit file without edit permission")
         raise UnauthorizedException(detail="No edit permissions")
 
     shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file_id, "wb"))
@@ -139,6 +150,7 @@ def edit_file(
         file_size=path.getsize(FILE_BASE_PATH + file_id),
         file_path=FILE_BASE_PATH + file_id,
     )
+    logger.info("Existing file edited")
     return file
 
 
@@ -146,9 +158,11 @@ def edit_file(
 async def stream_edit_file(file_id: str, file_name: str, request: Request, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested invalid file")
         raise NotFoundException(detail="Requested file not found")
 
     if user_file.access_type == Permissions.read:
+        logger.error("User requested to edit file without edit permission")
         raise UnauthorizedException(detail="No edit permissions")
 
     compressed_file = gzip.open(FILE_BASE_PATH + file_id, "wb")
@@ -163,6 +177,7 @@ async def stream_edit_file(file_id: str, file_name: str, request: Request, user:
         file_size=path.getsize(FILE_BASE_PATH + file_id),
         file_path=FILE_BASE_PATH + file_id,
     )
+    logger.info("Existing file edited(streamed)")
     return file
 
 
@@ -180,18 +195,22 @@ def change_access(
     db: Session = Depends(get_db),
 ):
     if user_id == user.id:
+        logger.error("User trying to change their own permission")
         raise ForbiddenException(detail="Trying to change your own permission")
 
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested file not found")
         raise NotFoundException(detail="File not found")
 
     if user_file.access_type != Permissions.owner:
+        logger.error("User requested to change file access without owner permission")
         raise UnauthorizedException(detail="Only owners can change file permission")
 
     access_user = get_user(db, user_id)
     if access_user is None:
-        raise NotFoundException(detail="User not found")
+        logger.error("User requested access user not found")
+        raise NotFoundException(detail="Access user not found")
 
     if access_type == Permissions.owner:
         change_file_access(db, user.id, file_id, Permissions.edit)
@@ -209,40 +228,49 @@ def remove_access(
     user_id: str, file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
 ):
     if user_id == user.id:
-        raise ForbiddenException(detail="Trying to change your own permission")
+        logger.error("User trying to remove their own permission")
+        raise ForbiddenException(detail="Trying to remove your own permission")
 
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested file not found")
         raise NotFoundException(detail="File not found")
 
     if user_file.access_type != Permissions.owner:
+        logger.error("User requested to remove file access without owner permission")
         raise UnauthorizedException(detail="Owner permission required")
 
     access_user = get_user(db, user_id)
     if access_user is None:
+        logger.error("User requested access user not found")
         raise NotFoundException(detail="User not found")
 
     access_file = get_user_file(db, user_id, file_id)
 
     if access_file:
-        return remove_file_access(db, user_id, file_id)
-
-    return access_file
+        logger.error("User requested access user already doesn't have permission")
+        raise NotFoundException(detail="Requested user already doesn't have permission")
+    return remove_file_access(db, user_id, file_id)
 
 
 @router.delete("/{file_id}", response_model=FileSchema)
 def delete_file(file_id: str, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
+        logger.error("User requested invalid file")
         raise NotFoundException(detail="File not found")
 
     user_file = get_user_file(db, user.id, file_id)
     if user_file.access_type != Permissions.owner:
+        logger.error("User requested to delete file access without owner permission")
         raise UnauthorizedException(detail="Owner permission required")
 
     deleted_file = delete_user_file(db, user_file.file_id)
     try:
         remove(deleted_file.file_path)
     except IOError:
+        logger.error("File exists in database but missing in storage")
         raise NotFoundException(detail="File not found")
+
+    logger.info("User deleted a file from storage")
     return deleted_file
