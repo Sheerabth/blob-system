@@ -4,14 +4,18 @@ from os import path
 
 from client_src.config import TOKEN_FILE_PATH
 from client_src.exceptions import TokenFileNotFound
-from client_src.extras.token import TokenType
+from client_src.TokenModel.token import TokenType
 
 
 def get_token(token_type: TokenType) -> str:
-    if TOKEN_FILE_PATH:
-        token_file_path = TOKEN_FILE_PATH
-    else:
+    if TOKEN_FILE_PATH is None:
         token_file_path = path.join(Path.home(), "tokens.json")
+    elif path.isfile(TOKEN_FILE_PATH):
+        token_file_path = TOKEN_FILE_PATH
+    elif path.isdir(TOKEN_FILE_PATH):
+        token_file_path = path.join(TOKEN_FILE_PATH, "tokens.json")
+    else:
+        raise TokenFileNotFound
 
     try:
         with open(token_file_path, "r") as token_file:
@@ -30,19 +34,26 @@ def get_token(token_type: TokenType) -> str:
 
 
 def set_token(token_type: TokenType, cookies) -> None:
-    if TOKEN_FILE_PATH:
-        token_file_path = TOKEN_FILE_PATH
-    else:
+    if TOKEN_FILE_PATH is None:
         token_file_path = path.join(Path.home(), "tokens.json")
+    elif path.isfile(TOKEN_FILE_PATH):
+        token_file_path = TOKEN_FILE_PATH
+    elif path.isdir(TOKEN_FILE_PATH):
+        token_file_path = path.join(TOKEN_FILE_PATH, "tokens.json")
+    else:
+        raise TokenFileNotFound
 
+    if not path.isfile(token_file_path):
+        with open(token_file_path, 'w') as fp:
+            pass
     try:
-        with open(token_file_path, "r+") as token_file:
+        with open(token_file_path, "r") as token_file:
             tokens = json.load(token_file)
 
     except json.decoder.JSONDecodeError:
         tokens = dict()
 
-    except IOError:
+    except IOError as e:
         raise TokenFileNotFound
 
     with open(token_file_path, "w+") as token_file:
