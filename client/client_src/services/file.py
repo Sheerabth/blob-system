@@ -2,13 +2,15 @@ from typing import Optional
 
 import typer
 
-from client_src.exceptions import IndexException
+from client_src.exceptions import IndexException, FileNotFoundException
 from client_src.models.permission import Permission
 from client_src.webapi.api import get_user_files
 
 
 def file_prompt(access_token: str, prompt_message: Optional[str] = "Enter file index", access_type: Optional[Permission] = None, not_access_type: Optional[Permission] = None) -> str:
     files = get_user_files(access_token)
+    if len(files) == 0:
+        raise FileNotFoundException
     typer.echo("Available Files:")
     indices = list()
     if access_type:

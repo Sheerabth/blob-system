@@ -32,3 +32,11 @@ class PermissionException(Error):
 
     def __init__(self, message: Optional[str] = "Invalid permission"):
         self.message = message
+
+
+class FileNotFoundException(Error):
+    """Exception for no files"""
+
+    def __init__(self, message: Optional[str] = "No files available"):
+        self.message = message
+
