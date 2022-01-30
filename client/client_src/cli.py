@@ -1,4 +1,4 @@
-import os
+from os import path
 from pathlib import Path
 from typing import Optional
 import typer
@@ -27,7 +27,7 @@ from client_src.webapi.api import (
     remove_user_access,
     get_user_info,
     delete_user_file,
-    edit_user_file,
+    edit_user_file, stream_upload_user_file,
 )
 
 app = typer.Typer()
@@ -56,6 +56,9 @@ def main(
 @app.command()
 @exception_handler
 def register(username: str, password: str = typer.Option(..., prompt="Enter your password")):
+    """
+    Register user with username
+    """
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     response_content = register_user(username, pwd_context.hash(password))
     set_tokens(response_content["tokens"])
@@ -66,6 +69,9 @@ def register(username: str, password: str = typer.Option(..., prompt="Enter your
 @app.command()
 @exception_handler
 def login(username: str, password: str = typer.Option(..., prompt="Enter your password")):
+    """
+    Login user with username
+    """
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     response_content = login_user(username, pwd_context.hash(password))
     set_tokens(response_content["tokens"])
@@ -76,6 +82,9 @@ def login(username: str, password: str = typer.Option(..., prompt="Enter your pa
 @app.command()
 @exception_handler
 def refresh():
+    """
+    Refresh user's token
+    """
     refresh_token = get_token(TokenType.refresh_token)
     response_content = refresh_user(refresh_token)
     set_token(TokenType.access_token, response_content["tokens"])
@@ -86,6 +95,9 @@ def refresh():
 @app.command()
 @exception_handler
 def logout():
+    """
+    Logout user
+    """
     refresh_token = get_token(TokenType.refresh_token)
     logout_user(refresh_token)
     typer.echo("Logout successful")
@@ -94,6 +106,9 @@ def logout():
 @app.command()
 @exception_handler
 def logout_all():
+    """
+    Logout user from all sessions
+    """
     refresh_token = get_token(TokenType.refresh_token)
     logout_all_users(refresh_token)
     typer.echo("Logout successful")
@@ -102,6 +117,9 @@ def logout_all():
 @app.command()
 @exception_handler
 def get_files():
+    """
+    List all files
+    """
     access_token = get_token(TokenType.access_token)
     files = get_user_files(access_token)
     typer.echo("Available Files:")
@@ -111,10 +129,18 @@ def get_files():
 
 @app.command()
 @exception_handler
-def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
+def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True), no_stream: bool = typer.Option(False, "-n", help="Don't stream file upload")):
+    """
+    Upload new file
+
+    If --no-stream is used, file will be streamed uploaded
+    """
     input_file = open(file_path, "rb")
     access_token = get_token(TokenType.access_token)
-    file = upload_user_file(access_token, input_file)
+    if no_stream:
+        file = upload_user_file(access_token, input_file)
+    else:
+        file = stream_upload_user_file(access_token, path.basename(file_path), input_file)
     typer.echo("File uploaded")
     typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
 
@@ -122,10 +148,13 @@ def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True,
 @app.command()
 @exception_handler
 def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, resolve_path=True)):
+    """
+    Download file
+    """
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index to download")
     downloaded_file = download_user_file(access_token, file_id)
-    with open(str(os.path.join(file_path, downloaded_file["file_name"])), "wb") as target_file:
+    with open(str(path.join(file_path, downloaded_file["file_name"])), "wb") as target_file:
         for chunk in downloaded_file["content"]:
             if chunk:
                 target_file.write(chunk)
@@ -135,6 +164,9 @@ def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=Fal
 @app.command()
 @exception_handler
 def file_info():
+    """
+    Get file information of a file
+    """
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index for info")
     file = file_access_info(access_token, file_id)
@@ -152,6 +184,9 @@ def file_info():
 @app.command()
 @exception_handler
 def rename_file():
+    """
+    Rename file
+    """
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index to rename", not_access_type=Permission.read)
     new_file_name = typer.prompt("Enter new file name")
@@ -164,6 +199,9 @@ def rename_file():
 @app.command()
 @exception_handler
 def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
+    """
+    Edit file
+    """
     input_file = open(file_path, "rb")
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index to edit", not_access_type=Permission.read)
@@ -175,12 +213,15 @@ def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, d
 @app.command()
 @exception_handler
 def change_access():
+    """
+    Add/modify access given to users for a file
+    """
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index to change access", access_type=Permission.owner)
     user_id = user_file_prompt(access_token, file_id, prompt_message="Enter user id to change access")
     access_type = typer.prompt("Enter permission to be provided")
 
-    if access_type not in Permission:
+    if access_type != Permission.owner and access_type != Permission.edit and access_type != Permission.read:
         raise PermissionException
     result = change_user_access(access_token, user_id, file_id, access_type)
     typer.echo(f"Access change successful")
@@ -189,6 +230,9 @@ def change_access():
 @app.command()
 @exception_handler
 def remove_access():
+    """
+    Remove access given to users for a file
+    """
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index to remove access", access_type=Permission.owner)
     user_id = user_file_prompt(access_token, file_id, prompt_message="Enter user id to remove access")
@@ -200,6 +244,9 @@ def remove_access():
 @app.command()
 @exception_handler
 def delete_file():
+    """
+    Delete file
+    """
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index delete", access_type=Permission.owner)
 
