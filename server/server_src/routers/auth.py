@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 
 from server_src.cache.cache_client import get_connection
 from server_src.db.database import get_db
-from server_src.exceptions.api import InvalidCredentialsException
+from server_src.exceptions.api import InvalidCredentialsException, ForbiddenException
 from server_src.middleware.auth import verify_refresh_token
 from server_src.middleware.jwt import create_access_token, create_refresh_token
 from server_src.schemas.user import UserCreateSchema, UserSchema
@@ -52,7 +52,7 @@ def register(
     user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
 
     if user:
-        raise InvalidCredentialsException
+        raise ForbiddenException("User already exists")
     user = create_user(db, form_data)
     access_token = create_access_token(data={"username": user.username, "user_id": user.id})
     refresh_token = create_refresh_token(data={"username": user.username, "user_id": user.id})
