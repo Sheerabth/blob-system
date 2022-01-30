@@ -8,17 +8,17 @@ from src import __app_name__, __version__
 from src.exception import PermissionException, FileNotFoundException
 from src.exception.handler import exception_handler
 from src.models.permission import Permission
-from src.services.file import file_prompt
+from src.services.file import file_prompt, filter_files, print_file_table, print_file_info
 from src.services.user import user_file_prompt
 from src.services.token import set_tokens, get_token, set_token
 from src.models.token import TokenType
+from src.utils.typer_utils import print_success
 from src.webapi.api import (
     register_user,
     login_user,
     logout_user,
     logout_all_users,
     get_user_files,
-    upload_user_file,
     refresh_user,
     download_user_file,
     file_access_info,
@@ -27,7 +27,7 @@ from src.webapi.api import (
     remove_user_access,
     get_user_info,
     delete_user_file,
-    edit_user_file, stream_upload_user_file, stream_edit_user_file,
+    stream_upload_user_file, stream_edit_user_file,
 )
 
 app = typer.Typer()
@@ -55,28 +55,28 @@ def main(
 
 @app.command()
 @exception_handler
-def register(username: str, password: str = typer.Option(..., prompt="Enter your password")):
+def register(username: str, password: str = typer.Option(..., prompt="Enter your password", hide_input=True)):
     """
     Register user with username
     """
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     response_content = register_user(username, pwd_context.hash(password))
     set_tokens(response_content["tokens"])
-    typer.echo("Register successful")
-    typer.echo(f"User Id: {response_content['user_id']}")
+    print_success("Register successful")
+    typer.echo(f"User Id: {response_content['user_id']}, Username: {username}")
 
 
 @app.command()
 @exception_handler
-def login(username: str, password: str = typer.Option(..., prompt="Enter your password")):
+def login(username: str, password: str = typer.Option(..., prompt="Enter your password", hide_input=True)):
     """
     Login user with username
     """
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     response_content = login_user(username, pwd_context.hash(password))
     set_tokens(response_content["tokens"])
-    typer.echo("Login successful")
-    typer.echo(f"User Id: {response_content['user_id']}")
+    print_success("Login successful")
+    typer.echo(f"User Id: {response_content['user_id']}, Username: {username}")
 
 
 @app.command()
@@ -88,7 +88,7 @@ def refresh():
     refresh_token = get_token(TokenType.refresh_token)
     response_content = refresh_user(refresh_token)
     set_token(TokenType.access_token, response_content["tokens"])
-    typer.echo("Refresh successful")
+    print_success("Refresh successful")
     typer.echo(f"User Id: {response_content['user_id']}")
 
 
@@ -100,7 +100,7 @@ def logout():
     """
     refresh_token = get_token(TokenType.refresh_token)
     logout_user(refresh_token)
-    typer.echo("Logout successful")
+    print_success("Logout successful")
 
 
 @app.command()
@@ -111,12 +111,12 @@ def logout_all():
     """
     refresh_token = get_token(TokenType.refresh_token)
     logout_all_users(refresh_token)
-    typer.echo("Logout successful")
+    print_success("Logout successful")
 
 
 @app.command()
 @exception_handler
-def get_files():
+def get_files(access: Optional[Permission] = typer.Option(None, show_choices=True, case_sensitive=False)):
     """
     List all files
     """
@@ -124,14 +124,14 @@ def get_files():
     files = get_user_files(access_token)
     if len(files) == 0:
         raise FileNotFoundException
-    typer.echo("Available Files:")
-    for user_file in files:
-        typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
+
+    files = filter_files(files, access)
+    print_file_table(files)
 
 
 @app.command()
 @exception_handler
-def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True), no_stream: bool = typer.Option(False, "--no-stream", "-n", help="Don't stream file upload")):
+def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
     """
     Upload new file
 
@@ -139,12 +139,9 @@ def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True,
     """
     input_file = open(file_path, "rb")
     access_token = get_token(TokenType.access_token)
-    if no_stream:
-        file = upload_user_file(access_token, input_file)
-    else:
-        file = stream_upload_user_file(access_token, path.basename(file_path), input_file)
-    typer.echo("File uploaded")
-    typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
+    file = stream_upload_user_file(access_token, path.basename(file_path), input_file)
+    print_success("File uploaded")
+    print_file_info(file)
 
 
 @app.command()
@@ -154,13 +151,15 @@ def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=Fal
     Download file
     """
     access_token = get_token(TokenType.access_token)
-    file_id = file_prompt(access_token, prompt_message="Enter file index to download")
+    files = get_user_files(access_token)
+    file_id = file_prompt(files, prompt_message="Enter file index to download")
     downloaded_file = download_user_file(access_token, file_id)
+
     with open(str(path.join(file_path, downloaded_file["file_name"])), "wb") as target_file:
         for chunk in downloaded_file["content"]:
             if chunk:
                 target_file.write(chunk)
-    typer.echo("Download successful")
+    print_success("Download successful")
 
 
 @app.command()
@@ -170,17 +169,12 @@ def file_info():
     Get file information of a file
     """
     access_token = get_token(TokenType.access_token)
-    file_id = file_prompt(access_token, prompt_message="Enter file index for info")
+    files = get_user_files(access_token)
+    file_id = file_prompt(files, prompt_message="Enter file index for info")
     file = file_access_info(access_token, file_id)
-    typer.echo("File Info:")
-    typer.echo(f"File Name: {file['file_name']}")
-    typer.echo(f"File Size: {file['file_size']} bytes")
-    typer.echo("Access users:")
-    for user in file["users"]:
-        user_info = get_user_info(access_token, user["user_id"])
-        typer.echo(
-            f"User Name: {user_info['username']}, Access Type: {user['access_type']}, User Id: {user['user_id']}"
-        )
+    user_ids = [user["user_id"] for user in file["users"]]
+    users = {user_id: get_user_info(access_token, user_id)["username"] for user_id in user_ids}
+    print_file_info(file, users)
 
 
 @app.command()
@@ -190,29 +184,28 @@ def rename_file():
     Rename file
     """
     access_token = get_token(TokenType.access_token)
-    file_id = file_prompt(access_token, prompt_message="Enter file index to rename", not_access_type=Permission.read)
+    files = get_user_files(access_token)
+    file_id = file_prompt(files, prompt_message="Enter file index to rename", not_access_type=Permission.read)
     new_file_name = typer.prompt("Enter new file name")
     file = rename_user_file(access_token, file_id, new_file_name)
 
-    typer.echo("File rename successful")
-    typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
+    print_success("File rename successful")
+    print_file_info(file, file_info_header="Updated File Info:")
 
 
 @app.command()
 @exception_handler
-def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True), no_stream: bool = typer.Option(False, "--no-stream", "-n", help="Don't stream file upload")):
+def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
     """
     Edit file
     """
     input_file = open(file_path, "rb")
     access_token = get_token(TokenType.access_token)
-    file_id = file_prompt(access_token, prompt_message="Enter file index to edit", not_access_type=Permission.read)
-    if no_stream:
-        file = edit_user_file(access_token, file_id, input_file)
-    else:
-        file = stream_edit_user_file(access_token, file_id, path.basename(file_path), input_file)
-    typer.echo("File edited")
-    typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
+    files = get_user_files(access_token)
+    file_id = file_prompt(files, prompt_message="Enter file index to edit", not_access_type=Permission.read)
+    file = stream_edit_user_file(access_token, file_id, path.basename(file_path), input_file)
+    print_success("File edited")
+    print_file_info(file, file_info_header="Updated File Info:")
 
 
 @app.command()
@@ -222,14 +215,18 @@ def change_access():
     Add/modify access given to users for a file
     """
     access_token = get_token(TokenType.access_token)
-    file_id = file_prompt(access_token, prompt_message="Enter file index to change access", access_type=Permission.owner)
-    user_id = user_file_prompt(access_token, file_id, prompt_message="Enter user id to change access")
+    files = get_user_files(access_token)
+    file_id = file_prompt(files, prompt_message="Enter file index to change access", access_type=Permission.owner)
+    file = file_access_info(access_token, file_id)
+    user_ids = [user["user_id"] for user in file["users"]]
+    users = {user_id: get_user_info(access_token, user_id)["username"] for user_id in user_ids}
+    user_id = user_file_prompt(file["users"], users, prompt_message="Enter user id to change access")
     access_type = typer.prompt("Enter permission to be provided")
 
     if access_type != Permission.owner and access_type != Permission.edit and access_type != Permission.read:
         raise PermissionException
-    result = change_user_access(access_token, user_id, file_id, access_type)
-    typer.echo(f"Access change successful")
+    change_user_access(access_token, user_id, file_id, access_type)
+    print_success(f"Access changed")
 
 
 @app.command()
@@ -239,11 +236,15 @@ def remove_access():
     Remove access given to users for a file
     """
     access_token = get_token(TokenType.access_token)
-    file_id = file_prompt(access_token, prompt_message="Enter file index to remove access", access_type=Permission.owner)
-    user_id = user_file_prompt(access_token, file_id, prompt_message="Enter user id to remove access")
+    files = get_user_files(access_token)
+    file_id = file_prompt(files, prompt_message="Enter file index to remove access", access_type=Permission.owner)
+    file = file_access_info(access_token, file_id)
+    user_ids = [user["user_id"] for user in file["users"]]
+    users = {user_id: get_user_info(access_token, user_id)["username"] for user_id in user_ids}
+    user_id = user_file_prompt(file["users"], users, prompt_message="Enter user id to remove access")
 
-    result = remove_user_access(access_token, user_id, file_id)
-    typer.echo(f"Access removal successful")
+    remove_user_access(access_token, user_id, file_id)
+    print_success(f"Access removed")
 
 
 @app.command()
@@ -253,7 +254,9 @@ def delete_file():
     Delete file
     """
     access_token = get_token(TokenType.access_token)
-    file_id = file_prompt(access_token, prompt_message="Enter file index delete", access_type=Permission.owner)
+    files = get_user_files(access_token)
+    file_id = file_prompt(files, prompt_message="Enter file index delete", access_type=Permission.owner)
 
     result = delete_user_file(access_token, file_id)
-    typer.echo(f"File delete successful")
+    print_success(f"File deleted")
+    print_file_info(result, file_info_header="Deleted File Info:")
