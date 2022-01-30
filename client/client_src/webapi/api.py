@@ -1,5 +1,5 @@
 from urllib.parse import unquote
-from typing import Optional, Dict, BinaryIO
+from typing import Optional, Dict, BinaryIO, List
 import re
 
 import requests
@@ -96,7 +96,7 @@ def get_user_info(access_token: str, user_id) -> Dict[str, str]:
     return response.json()
 
 
-def get_user_files(access_token: str) -> Dict[str, str]:
+def get_user_files(access_token: str) -> List:
     response = get_request("/file/", cookies={"access_token": access_token})
     return response.json()
 
@@ -119,7 +119,7 @@ def download_user_file(access_token: str, file_id: str) -> dict:
     return {"file_name": file_name, "content": response.iter_content(chunk_size=1024)}
 
 
-def file_access_info(access_token: str, file_id: str) -> Dict[str, str]:
+def file_access_info(access_token: str, file_id: str) -> Dict:
     response = get_request(f"/file/access/{file_id}", cookies={"access_token": access_token})
     return response.json()
 
