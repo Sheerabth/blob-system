@@ -24,7 +24,7 @@ class TokenExpiredException(APIException):
     """Exception for access token expiration"""
 
     def __init__(self, detail: Optional[str] = "Token expired"):
-        super(TokenExpiredException).__init__(
+        super(TokenExpiredException, self).__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error_code": 4001, "error_info": detail},
         )
