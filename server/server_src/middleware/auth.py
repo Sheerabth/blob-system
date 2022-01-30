@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from server_src.cache.cache_client import get_connection
 from server_src.config import REFRESH_TOKEN_SECRET, ALGORITHM, ACCESS_TOKEN_SECRET
 from server_src.db.database import get_db
-from server_src.exceptions.api import InvalidCredentialsException
+from server_src.exceptions.api import InvalidCredentialsException, TokenExpiredException
 from server_src.schemas.token import PayloadSchema
 from server_src.schemas.user import UserSchema
 from server_src.services.token import check_refresh_token
@@ -43,7 +43,7 @@ def verify_refresh_token(
 
 def verify_access_token(db: Session = Depends(get_db), access_token: Optional[str] = Cookie(None)) -> UserSchema:
     if access_token is None:
-        raise InvalidCredentialsException
+        raise TokenExpiredException
 
     try:
         payload = jwt.decode(access_token, ACCESS_TOKEN_SECRET, algorithms=[ALGORITHM])
@@ -53,7 +53,7 @@ def verify_access_token(db: Session = Depends(get_db), access_token: Optional[st
             raise InvalidCredentialsException
         token_data = PayloadSchema(username=user_name, user_id=user_id)
     except JWTError:
-        raise InvalidCredentialsException
+        raise TokenExpiredException
     user = get_user(db, user_id=token_data.user_id)
     if user is None:
         raise InvalidCredentialsException
