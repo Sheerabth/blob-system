@@ -1,5 +1,4 @@
 import gzip
-import mimetypes
 import os
 import shutil
 from typing import List
@@ -8,6 +7,7 @@ from urllib import parse
 from fastapi import APIRouter, UploadFile, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
+from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
 from server_src.db.database import get_db
@@ -35,12 +35,28 @@ router = APIRouter(default_response_class=JSONResponse, dependencies=[Depends(ge
 
 
 @router.post("/", response_model=FileSchema)
-def create_upload_file(
+def upload_file(
     input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
 ):
     file = create_user_file(db, user.id, input_file.filename)
 
     shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file.id, "wb"))
+
+    file = edit_user_file(
+        db, file.id, file_size=os.stat(FILE_BASE_PATH + file.id).st_size, file_path=FILE_BASE_PATH + file.id
+    )
+    return file
+
+
+@router.post("/stream", response_model=FileSchema)
+async def stream_upload_file(file_name: str, request: Request, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+
+    file = create_user_file(db, user.id, file_name)
+
+    compressed_file = gzip.open(FILE_BASE_PATH + file.id, "wb")
+
+    async for chunk in request.stream():
+        compressed_file.write(chunk)
 
     file = edit_user_file(
         db, file.id, file_size=os.stat(FILE_BASE_PATH + file.id).st_size, file_path=FILE_BASE_PATH + file.id
@@ -66,12 +82,17 @@ def download_file(file_id: str, user: UserSchema = Depends(verify_access_token),
         content_disposition = {"Content-Disposition": f"attachment; filename*=utf-8''{encoded}"}
 
     def iter_file():
-        with gzip.open(FILE_BASE_PATH + file_id, mode="rb") as file_like:
-            yield from file_like
+        file_like = gzip.open(FILE_BASE_PATH + file_id, mode="rb")
+        while True:
+            chunk = file_like.read(size=4096)
+            if not chunk:
+                break
+            yield chunk
 
-    return StreamingResponse(iter_file(), headers=content_disposition)
-
-    # return FileResponse(FILE_BASE_PATH + file_id, filename=user_file.file.file_name)
+    try:
+        return StreamingResponse(iter_file(), headers=content_disposition)
+    except IOError:
+        raise NotFoundException("File not found")
 
 
 @router.get("/access/{file_id}", response_model=FileAccessSchema)

@@ -26,11 +26,13 @@ def get_request(
 
 def post_request(
     path: str,
+    data=None,
     body: Optional[Dict[str, str]] = None,
     file: Optional[Dict[str, BinaryIO]] = None,
+    query_params: Optional[Dict[str, str]] = None,
     cookies: Optional[Dict[str, str]] = None,
 ) -> Response:
-    response_body = requests.post(URL + path, cookies=cookies, json=body, files=file)
+    response_body = requests.post(URL + path, data=data, params=query_params, cookies=cookies, json=body, files=file)
     return response_validator(response_body)
 
 
@@ -104,6 +106,11 @@ def get_user_files(access_token: str) -> List:
 def upload_user_file(access_token: str, input_file: BinaryIO) -> Dict[str, str]:
     file = {"input_file": input_file}
     response = post_request("/file/", file=file, cookies={"access_token": access_token})
+    return response.json()
+
+
+def stream_upload_user_file(access_token: str, file_name: str, input_file: BinaryIO) -> Dict[str, str]:
+    response = post_request("/file/stream", data=input_file, query_params={"file_name": file_name}, cookies={"access_token": access_token})
     return response.json()
 
 
