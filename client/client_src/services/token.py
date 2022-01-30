@@ -4,7 +4,7 @@ from os import path
 
 from client_src.config import TOKEN_FILE_PATH
 from client_src.exceptions import TokenFileNotFound
-from client_src.TokenModel.token import TokenType
+from client_src.models.token import TokenType
 
 
 def get_token(token_type: TokenType) -> str:

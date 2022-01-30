@@ -5,9 +5,13 @@ import typer
 from passlib.context import CryptContext
 
 from client_src import __app_name__, __version__
+from client_src.exceptions import PermissionException
 from client_src.exceptions.handler import exception_handler
-from client_src.token import set_tokens, get_token, set_token
-from client_src.TokenModel.token import TokenType
+from client_src.models.permission import Permission
+from client_src.services.file import file_prompt
+from client_src.services.user import user_file_prompt
+from client_src.services.token import set_tokens, get_token, set_token
+from client_src.models.token import TokenType
 from client_src.webapi.api import (
     register_user,
     login_user,
@@ -119,12 +123,8 @@ def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True,
 @exception_handler
 def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, resolve_path=True)):
     access_token = get_token(TokenType.access_token)
-    files = get_user_files(access_token)
-    typer.echo("Available Files:")
-    for user_file in files:
-        typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
-    index = int(typer.prompt("Enter file index to download"))
-    downloaded_file = download_user_file(access_token, files[index - 1]["file_id"])
+    file_id = file_prompt(access_token, prompt_message="Enter file index to download")
+    downloaded_file = download_user_file(access_token, file_id)
     with open(str(os.path.join(file_path, downloaded_file["file_name"])), "wb") as target_file:
         for chunk in downloaded_file["content"]:
             if chunk:
@@ -136,12 +136,8 @@ def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=Fal
 @exception_handler
 def file_info():
     access_token = get_token(TokenType.access_token)
-    files = get_user_files(access_token)
-    typer.echo("Available Files:")
-    for user_file in files:
-        typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
-    index = int(typer.prompt("Enter file index for info"))
-    file = file_access_info(access_token, files[index - 1]["file_id"])
+    file_id = file_prompt(access_token, prompt_message="Enter file index for info")
+    file = file_access_info(access_token, file_id)
     typer.echo("File Info:")
     typer.echo(f"File Name: {file['file_name']}")
     typer.echo(f"File Size: {file['file_size']} bytes")
@@ -157,14 +153,9 @@ def file_info():
 @exception_handler
 def rename_file():
     access_token = get_token(TokenType.access_token)
-    files = get_user_files(access_token)
-    typer.echo("Available Files:")
-    for user_file in files:
-        if user_file["access_type"] != "read":
-            typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
-    index = int(typer.prompt("Enter file index to rename"))
+    file_id = file_prompt(access_token, prompt_message="Enter file index to rename", not_access_type=Permission.read)
     new_file_name = typer.prompt("Enter new file name")
-    file = rename_user_file(access_token, files[index - 1]["file_id"], new_file_name)
+    file = rename_user_file(access_token, file_id, new_file_name)
 
     typer.echo("File rename successful")
     typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
@@ -175,12 +166,8 @@ def rename_file():
 def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
     input_file = open(file_path, "rb")
     access_token = get_token(TokenType.access_token)
-    files = get_user_files(access_token)
-    typer.echo("Available Files:")
-    for user_file in files:
-        typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
-    index = int(typer.prompt("Enter file index to edit"))
-    file = edit_user_file(access_token, files[index - 1]["file_id"], input_file)
+    file_id = file_prompt(access_token, prompt_message="Enter file index to edit", not_access_type=Permission.read)
+    file = edit_user_file(access_token, file_id, input_file)
     typer.echo("File edited")
     typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
 
@@ -189,26 +176,12 @@ def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, d
 @exception_handler
 def change_access():
     access_token = get_token(TokenType.access_token)
-    files = get_user_files(access_token)
-    typer.echo("Available Files:")
-    for user_file in files:
-        if user_file["access_type"] == "owner":
-            typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
-
-    index = int(typer.prompt("Enter file index to change access"))
-    file_id = files[index - 1]["file_id"]
-
-    file_info = file_access_info(access_token, file_id)
-    typer.echo("Access users:")
-    for user in file_info["users"]:
-        user_info = get_user_info(access_token, user["user_id"])
-        typer.echo(
-            f"User Name: {user_info['username']}, Access Type: {user['access_type']}, User Id: {user['user_id']}"
-        )
-
-    user_id = typer.prompt("Enter user id to change access")
+    file_id = file_prompt(access_token, prompt_message="Enter file index to change access", access_type=Permission.owner)
+    user_id = user_file_prompt(access_token, file_id, prompt_message="Enter user id to change access")
     access_type = typer.prompt("Enter permission to be provided")
 
+    if access_type not in Permission:
+        raise PermissionException
     result = change_user_access(access_token, user_id, file_id, access_type)
     typer.echo(f"Access change successful")
 
@@ -217,21 +190,8 @@ def change_access():
 @exception_handler
 def remove_access():
     access_token = get_token(TokenType.access_token)
-    files = get_user_files(access_token)
-    typer.echo("Available Files:")
-    for user_file in files:
-        if user_file["access_type"] == "owner":
-            typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
-
-    index = int(typer.prompt("Enter file index to remove access"))
-    file_id = files[index - 1]["file_id"]
-
-    file_info = file_access_info(access_token, file_id)
-    typer.echo("Access users:")
-    for user in file_info["users"]:
-        typer.echo(f"User Id: {user['user_id']}, Access Type: {user['access_type']}")
-
-    user_id = typer.prompt("Enter user id to remove access")
+    file_id = file_prompt(access_token, prompt_message="Enter file index to remove access", access_type=Permission.owner)
+    user_id = user_file_prompt(access_token, file_id, prompt_message="Enter user id to remove access")
 
     result = remove_user_access(access_token, user_id, file_id)
     typer.echo(f"Access removal successful")
@@ -241,14 +201,7 @@ def remove_access():
 @exception_handler
 def delete_file():
     access_token = get_token(TokenType.access_token)
-    files = get_user_files(access_token)
-    typer.echo("Available Files:")
-    for user_file in files:
-        if user_file["access_type"] == "owner":
-            typer.echo(f"{files.index(user_file) + 1}. File Name: {user_file['file']['file_name']}")
-
-    index = int(typer.prompt("Enter file index to delete"))
-    file_id = files[index - 1]["file_id"]
+    file_id = file_prompt(access_token, prompt_message="Enter file index delete", access_type=Permission.owner)
 
     result = delete_user_file(access_token, file_id)
     typer.echo(f"File delete successful")
