@@ -1,7 +1,7 @@
 import typer
 from requests.exceptions import RequestException
 
-from client_src.exceptions import TokenFileNotFound
+from client_src.exceptions import TokenFileNotFound, IndexException, PermissionException
 from client_src.exceptions import APIException
 from functools import wraps
 
@@ -12,6 +12,12 @@ def exception_handler(api_function):
 
         try:
             api_function(*args, **kwargs)
+
+        except IndexException as e:
+            typer.echo(e.message)
+
+        except PermissionException as e:
+            typer.echo(e.message)
 
         except TokenFileNotFound:
             typer.echo("Token file not found")
