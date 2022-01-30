@@ -1,5 +1,6 @@
 import gzip
 import logging
+from datetime import datetime
 from os import path, remove
 import shutil
 from typing import List
@@ -125,7 +126,7 @@ def rename_file(
         logger.error("User requested to rename file with read permission")
         raise UnauthorizedException(detail="No rename permissions")
 
-    return edit_user_file(db, user_file.file_id, file_name=file_name)
+    return edit_user_file(db, user_file.file_id, file_name=file_name, updated_at=datetime.utcnow().isoformat())
 
 
 @router.put("/{file_id}", response_model=FileSchema)
@@ -149,6 +150,7 @@ def edit_file(
         file_name=input_file.filename,
         file_size=path.getsize(FILE_BASE_PATH + file_id),
         file_path=FILE_BASE_PATH + file_id,
+        updated_at=datetime.utcnow().isoformat()
     )
     logger.info("Existing file edited")
     return file
@@ -176,6 +178,7 @@ async def stream_edit_file(file_id: str, file_name: str, request: Request, user:
         file_name=file_name,
         file_size=path.getsize(FILE_BASE_PATH + file_id),
         file_path=FILE_BASE_PATH + file_id,
+        updated_at=datetime.utcnow().isoformat()
     )
     logger.info("Existing file edited(streamed)")
     return file
@@ -247,7 +250,7 @@ def remove_access(
 
     access_file = get_user_file(db, user_id, file_id)
 
-    if access_file:
+    if not access_file:
         logger.error("User requested access user already doesn't have permission")
         raise NotFoundException(detail="Requested user already doesn't have permission")
     return remove_file_access(db, user_id, file_id)

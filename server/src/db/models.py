@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, Float, ForeignKey, String, Enum
+from sqlalchemy import Column, BigInteger, ForeignKey, String, Enum
 from sqlalchemy.orm import relationship
 import enum
 
@@ -39,6 +39,8 @@ class FileModel(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     file_name = Column(String, index=True)
-    file_size = Column(Float)
+    file_size = Column(BigInteger)
     file_path = Column(String, index=True)
     users = relationship("UserFileModel", back_populates="file")
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    updated_at = Column(String, default=lambda: datetime.utcnow().isoformat())

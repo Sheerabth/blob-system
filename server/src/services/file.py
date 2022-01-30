@@ -25,6 +25,7 @@ def edit_user_file(
     file_size: Optional[float] = None,
     file_name: Optional[str] = None,
     file_path: Optional[str] = None,
+    updated_at: Optional[str] = None,
 ) -> FileSchema:
     file = db.query(FileModel).filter(FileModel.id == file_id).first()
     if file_size:
@@ -33,7 +34,8 @@ def edit_user_file(
         file.file_name = file_name
     if file_path:
         file.file_path = file_path
-
+    if updated_at:
+        file.updated_at = updated_at
     db.commit()
     db.refresh(file)
 

@@ -14,8 +14,10 @@ class FileCreateSchema(FileBase):
 
 class FileSchema(FileCreateSchema):
     id: str
-    file_size: Optional[float] = None
+    file_size: Optional[int] = None
     file_path: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
     class Config:
         orm_mode = True
