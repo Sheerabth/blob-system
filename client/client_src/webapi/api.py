@@ -48,11 +48,13 @@ def patch_request(
 
 def put_request(
     path: str,
+    data=None,
     body: Optional[Dict[str, str]] = None,
+    query_params: Optional[Dict[str, str]] = None,
     file: Optional[Dict[str, BinaryIO]] = None,
     cookies: Optional[Dict[str, str]] = None,
 ) -> Response:
-    response_body = requests.put(URL + path, cookies=cookies, json=body, files=file)
+    response_body = requests.put(URL + path, data=data, params=query_params, cookies=cookies, json=body, files=file)
     return response_validator(response_body)
 
 
@@ -141,6 +143,11 @@ def rename_user_file(access_token: str, file_id: str, new_file_name: str) -> Dic
 def edit_user_file(access_token: str, file_id: str, input_file: BinaryIO) -> Dict[str, str]:
     file = {"input_file": input_file}
     response = put_request(f"/file/{file_id}", file=file, cookies={"access_token": access_token})
+    return response.json()
+
+
+def stream_edit_user_file(access_token: str, file_id: str, file_name: str, input_file: BinaryIO) -> Dict[str, str]:
+    response = put_request(f"/file/stream/{file_id}", data=input_file, query_params={"file_name": file_name}, cookies={"access_token": access_token})
     return response.json()
 
 

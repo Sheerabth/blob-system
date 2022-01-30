@@ -5,7 +5,7 @@ import typer
 from passlib.context import CryptContext
 
 from client_src import __app_name__, __version__
-from client_src.exceptions import PermissionException
+from client_src.exceptions import PermissionException, FileNotFoundException
 from client_src.exceptions.handler import exception_handler
 from client_src.models.permission import Permission
 from client_src.services.file import file_prompt
@@ -27,7 +27,7 @@ from client_src.webapi.api import (
     remove_user_access,
     get_user_info,
     delete_user_file,
-    edit_user_file, stream_upload_user_file,
+    edit_user_file, stream_upload_user_file, stream_edit_user_file,
 )
 
 app = typer.Typer()
@@ -122,6 +122,8 @@ def get_files():
     """
     access_token = get_token(TokenType.access_token)
     files = get_user_files(access_token)
+    if len(files) == 0:
+        raise FileNotFoundException
     typer.echo("Available Files:")
     for user_file in files:
         typer.echo(f"{files.index(user_file)+1}. File Name: {user_file['file']['file_name']}")
@@ -129,7 +131,7 @@ def get_files():
 
 @app.command()
 @exception_handler
-def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True), no_stream: bool = typer.Option(False, "-n", help="Don't stream file upload")):
+def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True), no_stream: bool = typer.Option(False, "--no-stream", "-n", help="Don't stream file upload")):
     """
     Upload new file
 
@@ -198,14 +200,17 @@ def rename_file():
 
 @app.command()
 @exception_handler
-def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
+def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True), no_stream: bool = typer.Option(False, "--no-stream", "-n", help="Don't stream file upload")):
     """
     Edit file
     """
     input_file = open(file_path, "rb")
     access_token = get_token(TokenType.access_token)
     file_id = file_prompt(access_token, prompt_message="Enter file index to edit", not_access_type=Permission.read)
-    file = edit_user_file(access_token, file_id, input_file)
+    if no_stream:
+        file = edit_user_file(access_token, file_id, input_file)
+    else:
+        file = stream_edit_user_file(access_token, file_id, path.basename(file_path), input_file)
     typer.echo("File edited")
     typer.echo(f"File Name: {file['file_name']}, File Size: {file['file_size']} bytes")
 

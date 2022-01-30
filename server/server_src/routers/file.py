@@ -1,5 +1,5 @@
 import gzip
-import os
+from os import path, remove
 import shutil
 from typing import List
 from urllib import parse
@@ -43,7 +43,7 @@ def upload_file(
     shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file.id, "wb"))
 
     file = edit_user_file(
-        db, file.id, file_size=os.stat(FILE_BASE_PATH + file.id).st_size, file_path=FILE_BASE_PATH + file.id
+        db, file.id, file_size=path.getsize(FILE_BASE_PATH + file.id), file_path=FILE_BASE_PATH + file.id
     )
     return file
 
@@ -59,7 +59,7 @@ async def stream_upload_file(file_name: str, request: Request, user: UserSchema 
         compressed_file.write(chunk)
 
     file = edit_user_file(
-        db, file.id, file_size=os.stat(FILE_BASE_PATH + file.id).st_size, file_path=FILE_BASE_PATH + file.id
+        db, file.id, file_size=path.getsize(FILE_BASE_PATH + file.id), file_path=FILE_BASE_PATH + file.id
     )
     return file
 
@@ -92,7 +92,7 @@ def download_file(file_id: str, user: UserSchema = Depends(verify_access_token),
     try:
         return StreamingResponse(iter_file(), headers=content_disposition)
     except IOError:
-        raise NotFoundException("File not found")
+        raise NotFoundException(detail="File not found")
 
 
 @router.get("/access/{file_id}", response_model=FileAccessSchema)
@@ -136,10 +136,39 @@ def edit_file(
         db,
         file_id,
         file_name=input_file.filename,
-        file_size=os.stat(FILE_BASE_PATH + file_id).st_size,
+        file_size=path.getsize(FILE_BASE_PATH + file_id),
         file_path=FILE_BASE_PATH + file_id,
     )
     return file
+
+
+@router.put("/stream/{file_id}", response_model=FileSchema)
+async def stream_edit_file(file_id: str, file_name: str, request: Request, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+    user_file = get_user_file(db, user.id, file_id)
+    if user_file is None:
+        raise NotFoundException(detail="Requested file not found")
+
+    if user_file.access_type == Permissions.read:
+        raise UnauthorizedException(detail="No edit permissions")
+
+    compressed_file = gzip.open(FILE_BASE_PATH + file_id, "wb")
+
+    async for chunk in request.stream():
+        compressed_file.write(chunk)
+
+    file = edit_user_file(
+        db,
+        file_id,
+        file_name=file_name,
+        file_size=path.getsize(FILE_BASE_PATH + file_id),
+        file_path=FILE_BASE_PATH + file_id,
+    )
+    return file
+
+
+@router.get("/", response_model=List[UserFileInfoSchema])
+def get_files(user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+    return get_user_files(db, user.id)
 
 
 @router.patch("/access/{file_id}", response_model=UserFileSchema)
@@ -212,5 +241,8 @@ def delete_file(file_id: str, user: UserSchema = Depends(verify_access_token), d
         raise UnauthorizedException(detail="Owner permission required")
 
     deleted_file = delete_user_file(db, user_file.file_id)
-    os.remove(deleted_file.file_path)
+    try:
+        remove(deleted_file.file_path)
+    except IOError:
+        raise NotFoundException(detail="File not found")
     return deleted_file
