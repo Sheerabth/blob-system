@@ -11,6 +11,10 @@ Blob System is a simple blob storage server which allows for file upload, downlo
 * Cache - Redis
 * ORM - SQLAlchemy
 
+## Deployment and Demo
+* The server is deployed [here](http://52.186.137.111:8080) and the fastapi docs for that can be accessed [here](http://52.186.137.111:8080/docs).
+* Demo video can be found [here](https://drive.google.com/file/d/1bT7nEM7KPWKmSr3DDH1fBz9G5V-nLit0/view?usp=sharing).
+
 ## Setting up the environment
 
 ### Cloning the repository
@@ -31,7 +35,7 @@ gh repo clone Sheerabth/blob-system
 ## Client Setup
 
 ### Installing Dependencies
-Using [pip](https://pip.pypa.io/en/stable/). Creating a dedicated [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for the project is advised. Recommended python version `>=3.9`
+Using [pip](https://pip.pypa.io/en/stable/). Creating a dedicated [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for the project is advised. Recommended python version `>=3.9`.
 ```
 cd blob-system/client
 pip install -r requirements.txt
@@ -75,14 +79,14 @@ Commands:
 The deployment server is hosted at [http://52.186.137.111:8080](http://52.186.137.111:8080). So unless you want to run the server locally, this section is not required.
 
 ### Installing Dependencies
-Using [pip](https://pip.pypa.io/en/stable/). Creating a dedicated [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for the project is advised. Recommended python version `>=3.9`
+Using [pip](https://pip.pypa.io/en/stable/). Creating a dedicated [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for the project is advised. Recommended python version `>=3.9`.
 ```
 cd blob-system/server
 pip install -r requirements.txt
 ```
 
 ### Change client config
-As server is being setup locally, change the API URL in the client environment variables to the url where the server is about to be hosted ie. http://localhost:8080
+As server is being setup locally, change the API URL in the client environment variables to the url where the server is about to be hosted ie. http://localhost:8080.
 
 ### Database Setup
 Databases can be setup locally using docker.
@@ -90,6 +94,8 @@ Databases can be setup locally using docker.
 # Inside the server directory.
 docker-compose up -d
 ```
+[Alembic](https://alembic.sqlalchemy.org/en/latest/) can be used for migration of SQLAlchemy models to the database.
+
 Feel free to use your own databases.
 
 ### Make `.env` configuration
@@ -101,10 +107,12 @@ Create a copy of `server/.env.example` in the same directory and name it `.env`.
 python -m src
 ```
 
+### Database Design
+
+[design](https://drive.google.com/file/d/1g8jPGmTHeXIBW8jS3mWXLFBjWRCYBVmA/view?usp=sharing)
+
 ## Contributing
 All contributions and pull requests are welcome. Open an issue if you find any bugs/faults or if you want to implement a change and would like to discuss the implementation.
-
-
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
