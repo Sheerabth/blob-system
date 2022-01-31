@@ -131,7 +131,7 @@ def get_files(access: Optional[Permission] = typer.Option(None, show_choices=Tru
 
 @app.command()
 @exception_handler
-def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
+def upload(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
     """
     Upload new file
 
@@ -146,7 +146,7 @@ def upload_file(file_path: Path = typer.Option(..., exists=True, file_okay=True,
 
 @app.command()
 @exception_handler
-def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, resolve_path=True)):
+def download(dest_path: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, resolve_path=True)):
     """
     Download file
     """
@@ -155,7 +155,7 @@ def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=Fal
     file_id = file_prompt(files, prompt_message="Enter file index to download")
     downloaded_file = download_user_file(access_token, file_id)
 
-    with open(str(path.join(file_path, downloaded_file["file_name"])), "wb") as target_file:
+    with open(str(path.join(dest_path, downloaded_file["file_name"])), "wb") as target_file:
         for chunk in downloaded_file["content"]:
             if chunk:
                 target_file.write(chunk)
@@ -164,7 +164,7 @@ def download_file(file_path: Path = typer.Option(..., exists=True, file_okay=Fal
 
 @app.command()
 @exception_handler
-def file_info():
+def info():
     """
     Get file information of a file
     """
@@ -179,7 +179,7 @@ def file_info():
 
 @app.command()
 @exception_handler
-def rename_file():
+def rename():
     """
     Rename file
     """
@@ -195,7 +195,7 @@ def rename_file():
 
 @app.command()
 @exception_handler
-def edit_file(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
+def edit(file_path: Path = typer.Option(..., exists=True, file_okay=True, dir_okay=False, resolve_path=True)):
     """
     Edit file
     """
@@ -249,7 +249,7 @@ def remove_access():
 
 @app.command()
 @exception_handler
-def delete_file():
+def delete():
     """
     Delete file
     """
