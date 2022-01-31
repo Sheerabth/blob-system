@@ -11,12 +11,11 @@ def get_user(db: Session, user_id: str):
 
 
 def get_user_by_username(db: Session, username: str, password: str):
-    return db.query(UserModel).filter(UserModel.username == username, password == password).first()
+    return db.query(UserModel).filter(UserModel.username == username).first()
 
 
 def create_user(db: Session, user: UserCreateSchema):
-    fake_hashed_password = user.password
-    db_user = UserModel(username=user.username, hashed_password=fake_hashed_password)
+    db_user = UserModel(username=user.username, hashed_password=user.password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

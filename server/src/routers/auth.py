@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Response, Cookie
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from redis import Redis
-from passlib.context import CryptContext
+import bcrypt
 
 from src.cache.cache_client import get_connection
 from src.db.database import get_db
@@ -19,6 +19,8 @@ from src.services.user import get_user_by_username, create_user, logout_all_user
 router = APIRouter(default_response_class=JSONResponse)
 logger = logging.getLogger()
 
+SALT = b'$2b$12$4ct/tWTnhf4oXmfA/4Fun.'
+
 
 @router.post("/login")
 def login(
@@ -27,8 +29,9 @@ def login(
     db: Session = Depends(get_db),
     key_store: Redis = Depends(get_connection),
 ):
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
+
+    hashed_password = bcrypt.hashpw(form_data.password.encode('utf-8'), SALT).decode('utf-8')
+    user = get_user_by_username(db, form_data.username, hashed_password)
 
     if not user:
         logging.error("Invalid Login")
@@ -51,8 +54,8 @@ def register(
     db: Session = Depends(get_db),
     key_store: Redis = Depends(get_connection),
 ):
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    user = get_user_by_username(db, form_data.username, pwd_context.hash(form_data.password))
+    hashed_password = bcrypt.hashpw(form_data.password.encode('utf-8'), SALT).decode('utf-8')
+    user = get_user_by_username(db, form_data.username, hashed_password)
 
     if user:
         logging.error("User already exists")
