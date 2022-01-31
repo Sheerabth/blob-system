@@ -107,9 +107,9 @@ Create a copy of `server/.env.example` in the same directory and name it `.env`.
 python -m src
 ```
 
-### Database Design
+### Database Schema
 
-[design](https://drive.google.com/file/d/1g8jPGmTHeXIBW8jS3mWXLFBjWRCYBVmA/view?usp=sharing)
+![design](https://github.com/Sheerabth/blob-system/blob/main/assets/db_schema.png?raw=true)
 
 ## Contributing
 All contributions and pull requests are welcome. Open an issue if you find any bugs/faults or if you want to implement a change and would like to discuss the implementation.
