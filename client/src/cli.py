@@ -32,7 +32,7 @@ from src.webapi.api import (
 )
 
 app = typer.Typer()
-SALT = b'$2b$12$AuLpm9YrPfMWFclCgWn/n.'
+SALT = b"$2b$12$AuLpm9YrPfMWFclCgWn/n."
 
 
 def _version_callback(value: bool) -> None:
@@ -61,7 +61,7 @@ def register(username: str, password: str = typer.Option(..., prompt="Enter your
     """
     Register user with username
     """
-    response_content = register_user(username, bcrypt.hashpw(password.encode('utf-8'), SALT).decode('utf-8'))
+    response_content = register_user(username, bcrypt.hashpw(password.encode("utf-8"), SALT).decode("utf-8"))
     set_tokens(response_content["tokens"])
     print_success("Register successful")
     typer.echo(f"User Id: {response_content['user_id']}, Username: {username}")
@@ -73,7 +73,7 @@ def login(username: str, password: str = typer.Option(..., prompt="Enter your pa
     """
     Login user with username
     """
-    response_content = login_user(username, bcrypt.hashpw(password.encode('utf-8'), SALT).decode('utf-8'))
+    response_content = login_user(username, bcrypt.hashpw(password.encode("utf-8"), SALT).decode("utf-8"))
     set_tokens(response_content["tokens"])
     print_success("Login successful")
     typer.echo(f"User Id: {response_content['user_id']}, Username: {username}")

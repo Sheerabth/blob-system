@@ -19,7 +19,7 @@ from src.services.user import get_user_by_username, create_user, logout_all_user
 router = APIRouter(default_response_class=JSONResponse)
 logger = logging.getLogger()
 
-SALT = b'$2b$12$4ct/tWTnhf4oXmfA/4Fun.'
+SALT = b"$2b$12$4ct/tWTnhf4oXmfA/4Fun."
 
 
 @router.post("/login")
@@ -30,7 +30,7 @@ def login(
     key_store: Redis = Depends(get_connection),
 ):
 
-    hashed_password = bcrypt.hashpw(form_data.password.encode('utf-8'), SALT).decode('utf-8')
+    hashed_password = bcrypt.hashpw(form_data.password.encode("utf-8"), SALT).decode("utf-8")
     user = get_user_by_username(db, form_data.username, hashed_password)
 
     if not user:
@@ -54,7 +54,7 @@ def register(
     db: Session = Depends(get_db),
     key_store: Redis = Depends(get_connection),
 ):
-    hashed_password = bcrypt.hashpw(form_data.password.encode('utf-8'), SALT).decode('utf-8')
+    hashed_password = bcrypt.hashpw(form_data.password.encode("utf-8"), SALT).decode("utf-8")
     user = get_user_by_username(db, form_data.username, hashed_password)
 
     if user:
