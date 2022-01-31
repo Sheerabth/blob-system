@@ -1,0 +1,2 @@
+black==21.12b0
+typer-cli==0.0.12
