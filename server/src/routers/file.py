@@ -34,13 +34,11 @@ from src.services.user import get_user
 from src.exceptions.api import NotFoundException, UnauthorizedException, ForbiddenException
 
 router = APIRouter(default_response_class=JSONResponse, dependencies=[Depends(get_db)])
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 @router.post("/", response_model=FileSchema)
-def upload_file(
-    input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
-):
+def upload_file(input_file: UploadFile, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
     file = create_user_file(db, user.id, input_file.filename)
 
     shutil.copyfileobj(input_file.file, gzip.open(FILE_BASE_PATH + file.id, "wb"))
@@ -53,7 +51,9 @@ def upload_file(
 
 
 @router.post("/stream", response_model=FileSchema)
-async def stream_upload_file(file_name: str, request: Request, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+async def stream_upload_file(
+    file_name: str, request: Request, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)
+):
 
     file = create_user_file(db, user.id, file_name)
 
@@ -150,14 +150,20 @@ def edit_file(
         file_name=input_file.filename,
         file_size=path.getsize(FILE_BASE_PATH + file_id),
         file_path=FILE_BASE_PATH + file_id,
-        updated_at=datetime.utcnow().isoformat()
+        updated_at=datetime.utcnow().isoformat(),
     )
     logger.info("Existing file edited")
     return file
 
 
 @router.put("/stream/{file_id}", response_model=FileSchema)
-async def stream_edit_file(file_id: str, file_name: str, request: Request, user: UserSchema = Depends(verify_access_token), db: Session = Depends(get_db)):
+async def stream_edit_file(
+    file_id: str,
+    file_name: str,
+    request: Request,
+    user: UserSchema = Depends(verify_access_token),
+    db: Session = Depends(get_db),
+):
     user_file = get_user_file(db, user.id, file_id)
     if user_file is None:
         logger.error("User requested invalid file")
@@ -178,7 +184,7 @@ async def stream_edit_file(file_id: str, file_name: str, request: Request, user:
         file_name=file_name,
         file_size=path.getsize(FILE_BASE_PATH + file_id),
         file_path=FILE_BASE_PATH + file_id,
-        updated_at=datetime.utcnow().isoformat()
+        updated_at=datetime.utcnow().isoformat(),
     )
     logger.info("Existing file edited(streamed)")
     return file

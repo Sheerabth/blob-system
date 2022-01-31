@@ -21,7 +21,7 @@ def exception_handler(api_function):
             print_error("Token file not found")
 
         except APIException as e:
-            print_error(e.detail['error_info'])
+            print_error(e.detail["error_info"])
 
         except RequestException:
             print_error("Cant connect to host")

@@ -17,7 +17,7 @@ from src.services.token import remove_refresh_token, set_refresh_token
 from src.services.user import get_user_by_username, create_user, logout_all_users
 
 router = APIRouter(default_response_class=JSONResponse)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 @router.post("/login")
@@ -82,7 +82,6 @@ def logout(
     key_store: Redis = Depends(get_connection),
 ):
     remove_refresh_token(key_store, refresh_token)
-
 
 
 @router.get("/logout_all")

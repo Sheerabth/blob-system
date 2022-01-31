@@ -27,7 +27,8 @@ from src.webapi.api import (
     remove_user_access,
     get_user_info,
     delete_user_file,
-    stream_upload_user_file, stream_edit_user_file,
+    stream_upload_user_file,
+    stream_edit_user_file,
 )
 
 app = typer.Typer()

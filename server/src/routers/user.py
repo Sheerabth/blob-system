@@ -11,7 +11,7 @@ from src.schemas.user import UserSchema
 from src.services.user import get_user
 
 router = APIRouter(default_response_class=JSONResponse)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 @router.get("/{user_id}", response_model=UserSchema)

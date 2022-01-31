@@ -8,7 +8,7 @@ from redis import Redis
 from sqlalchemy.orm import Session
 
 from src.cache.cache_client import get_connection
-from src.config import REFRESH_TOKEN_SECRET, ALGORITHM, ACCESS_TOKEN_SECRET
+from src.config import REFRESH_TOKEN_SECRET, ACCESS_TOKEN_SECRET
 from src.db.database import get_db
 from src.exceptions.api import InvalidCredentialsException, TokenExpiredException
 from src.schemas.token import PayloadSchema
@@ -26,7 +26,7 @@ def verify_refresh_token(
         raise InvalidCredentialsException
 
     try:
-        payload = jwt.decode(refresh_token, REFRESH_TOKEN_SECRET, algorithms=[ALGORITHM])
+        payload = jwt.decode(refresh_token, REFRESH_TOKEN_SECRET, algorithms=["HS256"])
         user_name: str = payload.get("username")
         user_id: str = payload.get("user_id")
         created_at: str = payload.get("created_at")
@@ -46,7 +46,7 @@ def verify_access_token(db: Session = Depends(get_db), access_token: Optional[st
         raise TokenExpiredException
 
     try:
-        payload = jwt.decode(access_token, ACCESS_TOKEN_SECRET, algorithms=[ALGORITHM])
+        payload = jwt.decode(access_token, ACCESS_TOKEN_SECRET, algorithms=["HS256"])
         user_name: str = payload.get("username")
         user_id: str = payload.get("user_id")
         if user_id is None:

@@ -106,7 +106,9 @@ def get_user_files(access_token: str) -> List:
 
 
 def stream_upload_user_file(access_token: str, file_name: str, input_file: BinaryIO) -> Dict[str, str]:
-    response = post_request("/file/stream", data=input_file, query_params={"file_name": file_name}, cookies={"access_token": access_token})
+    response = post_request(
+        "/file/stream", data=input_file, query_params={"file_name": file_name}, cookies={"access_token": access_token}
+    )
     return response.json()
 
 
@@ -135,7 +137,12 @@ def rename_user_file(access_token: str, file_id: str, new_file_name: str) -> Dic
 
 
 def stream_edit_user_file(access_token: str, file_id: str, file_name: str, input_file: BinaryIO) -> Dict[str, str]:
-    response = put_request(f"/file/stream/{file_id}", data=input_file, query_params={"file_name": file_name}, cookies={"access_token": access_token})
+    response = put_request(
+        f"/file/stream/{file_id}",
+        data=input_file,
+        query_params={"file_name": file_name},
+        cookies={"access_token": access_token},
+    )
     return response.json()
 
 

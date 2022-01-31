@@ -9,7 +9,9 @@ from src.utils.typer_utils import print_header
 from src.utils.format_utils import format_iso_string, auto_unit
 
 
-def filter_files(files: List[Dict], access_type: Optional[Permission] = None, not_access_type: Optional[Permission] = None) -> List:
+def filter_files(
+    files: List[Dict], access_type: Optional[Permission] = None, not_access_type: Optional[Permission] = None
+) -> List:
     file_list = files
     if access_type:
         file_list = [file for file in files if file["access_type"] == access_type]
@@ -19,7 +21,9 @@ def filter_files(files: List[Dict], access_type: Optional[Permission] = None, no
     return file_list
 
 
-def print_file_info(file_info: Dict, users: Optional[Dict[str, str]] = None, file_info_header: Optional[str] = "File Info:") -> None:
+def print_file_info(
+    file_info: Dict, users: Optional[Dict[str, str]] = None, file_info_header: Optional[str] = "File Info:"
+) -> None:
     file_info_data = [
         ["Name:", file_info["file_name"]],
         ["Size:", auto_unit(file_info["file_size"])],
@@ -39,14 +43,27 @@ def print_file_table(files: List[Dict]) -> None:
         raise FileNotFoundException
     print_header("Available Files:")
 
-    data = [[i, file["file"]["file_name"], auto_unit(file["file"]["file_size"]), format_iso_string(file["file"]["created_at"]),
-             format_iso_string(file["file"]["updated_at"])] for i, file in enumerate(files)]
+    data = [
+        [
+            i,
+            file["file"]["file_name"],
+            auto_unit(file["file"]["file_size"]),
+            format_iso_string(file["file"]["created_at"]),
+            format_iso_string(file["file"]["updated_at"]),
+        ]
+        for i, file in enumerate(files)
+    ]
     file_table = tabulate(data, headers=["Index", "Name", "Size", "Created Time", "Updated Time"])
 
     typer.echo(file_table)
 
 
-def file_prompt(files: List[Dict], prompt_message: Optional[str] = "Enter file index", access_type: Optional[Permission] = None, not_access_type: Optional[Permission] = None) -> str:
+def file_prompt(
+    files: List[Dict],
+    prompt_message: Optional[str] = "Enter file index",
+    access_type: Optional[Permission] = None,
+    not_access_type: Optional[Permission] = None,
+) -> str:
     files = filter_files(files, access_type, not_access_type)
     print_file_table(files)
     try:
@@ -59,4 +76,3 @@ def file_prompt(files: List[Dict], prompt_message: Optional[str] = "Enter file i
 
     file_id = files[index]["file_id"]
     return file_id
-

@@ -46,4 +46,3 @@ class FileNotFoundException(Error):
 
     def __init__(self, message: Optional[str] = "No files available"):
         self.message = message
-

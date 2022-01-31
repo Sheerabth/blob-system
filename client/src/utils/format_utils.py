@@ -7,7 +7,7 @@ from dateutil import tz
 def format_iso_string(iso_string: str) -> str:
     utc_time = datetime.fromisoformat(iso_string)
     local_time = utc_time.astimezone(tz.tzlocal())
-    return local_time.strftime('%Y-%m-%d %H:%M:%S')
+    return local_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def auto_unit(number: Union[int, float]) -> str:
@@ -16,16 +16,16 @@ def auto_unit(number: Union[int, float]) -> str:
     credit: glances
     """
     if number is None:
-        return '-'
+        return "-"
     units = [
-        (1208925819614629174706176, 'Y'),
-        (1180591620717411303424, 'Z'),
-        (1152921504606846976, 'E'),
-        (1125899906842624, 'P'),
-        (1099511627776, 'T'),
-        (1073741824, 'G'),
-        (1048576, 'M'),
-        (1024, 'K'),
+        (1208925819614629174706176, "Y"),
+        (1180591620717411303424, "Z"),
+        (1152921504606846976, "E"),
+        (1125899906842624, "P"),
+        (1099511627776, "T"),
+        (1073741824, "G"),
+        (1048576, "M"),
+        (1024, "K"),
     ]
 
     for unit, suffix in units:
@@ -36,9 +36,8 @@ def auto_unit(number: Union[int, float]) -> str:
                 precision = 2
             elif value < 100:
                 precision = 1
-            if suffix == 'K':
+            if suffix == "K":
                 precision = 0
-            return '{:.{decimal}f}{suffix}'.format(value, decimal=precision, suffix=suffix)
+            return "{:.{decimal}f}{suffix}".format(value, decimal=precision, suffix=suffix)
 
-    return '{!s}'.format(number)
-
+    return "{!s}".format(number)

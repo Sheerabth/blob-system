@@ -44,7 +44,7 @@ def set_token(token_type: TokenType, cookies) -> None:
         raise TokenFileNotFound
 
     if not path.isfile(token_file_path):
-        with open(token_file_path, 'w') as fp:
+        with open(token_file_path, "w") as fp:
             pass
     try:
         with open(token_file_path, "r") as token_file:

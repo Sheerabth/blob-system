@@ -15,7 +15,12 @@ def print_user_access_info(access_entries: List[Dict], users: Dict[str, str]) ->
     typer.echo(user_table)
 
 
-def user_file_prompt(access_entries: List[Dict], users: Dict[str, str], check_user_id: Optional[bool] = False, prompt_message: Optional[str] = "Enter used id") -> str:
+def user_file_prompt(
+    access_entries: List[Dict],
+    users: Dict[str, str],
+    check_user_id: Optional[bool] = False,
+    prompt_message: Optional[str] = "Enter used id",
+) -> str:
     print_user_access_info(access_entries, users)
 
     user_id = typer.prompt(prompt_message)

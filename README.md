@@ -1,14 +1,14 @@
 # Blob System
 
-Blob System is a simple blob storage server which allows file upload, download, rename, edit and delete.
+Blob System is a simple blob storage server which allows for file upload, download, rename, edit and delete.
 
 * Server - a [FastAPI](https://fastapi.tiangolo.com/) based web application to handle requests for the blob storage system.
 * Client - a [Typer](https://typer.tiangolo.com/) based CLI application to interact with the server.
 
-## Tools and technology used
+## Tools & technology used
 
 * Database - PostgreSQL
-* Keystore - Redis
+* Cache - Redis
 * ORM - SQLAlchemy
 
 ## Setting up the environment
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 ### Make `.env` configuration
 Create a copy of `client/.env.example` in the same directory and name it `.env`. Fill in the required environment variables. You can also have those environment variables set up in your shell.
 
-### Execution
+### Running the client
 ```
 # Inside the client directory
 
@@ -84,7 +84,7 @@ pip install -r requirements.txt
 ```
 
 ### Change client config
-As server is being setup locally, change the API URL in the client environment variables to the url where the server is about to be hosted ie. http://0.0.0.0:8080
+As server is being setup locally, change the API URL in the client environment variables to the url where the server is about to be hosted ie. http://localhost:8080
 
 ### Database Setup
 Databases can be setup locally using docker.
@@ -93,12 +93,12 @@ Databases can be setup locally using docker.
 
 docker-compose up -d
 ```
-Feel free to use you own databases.
+Feel free to use your own databases.
 
 ### Make `.env` configuration
 Create a copy of `server/.env.example` in the same directory and name it `.env`. Fill in the required environment variables. You can also have those environment variables set up in your shell.
 
-### Execution
+### Running the server
 ```
 # Inside the server directory
 
