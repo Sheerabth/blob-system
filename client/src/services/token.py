@@ -8,7 +8,7 @@ from src.models.token import TokenType
 
 
 def get_token(token_type: TokenType) -> str:
-    if TOKEN_FILE_PATH is None:
+    if TOKEN_FILE_PATH is None or TOKEN_FILE_PATH == "":
         token_file_path = path.join(Path.home(), "tokens.json")
     elif path.isfile(TOKEN_FILE_PATH):
         token_file_path = TOKEN_FILE_PATH
@@ -34,7 +34,7 @@ def get_token(token_type: TokenType) -> str:
 
 
 def set_token(token_type: TokenType, cookies) -> None:
-    if TOKEN_FILE_PATH is None:
+    if TOKEN_FILE_PATH is None or TOKEN_FILE_PATH == "":
         token_file_path = path.join(Path.home(), "tokens.json")
     elif path.isfile(TOKEN_FILE_PATH):
         token_file_path = TOKEN_FILE_PATH
