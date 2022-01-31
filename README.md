@@ -43,8 +43,6 @@ Create a copy of `client/.env.example` in the same directory and name it `.env`.
 ### Running the client
 ```
 # Inside the client directory
-
-# CLI format
 Usage: python -m src [OPTIONS] COMMAND [ARGS]...
 
 Options:
@@ -74,7 +72,7 @@ Commands:
 ```
 
 ## Server Setup (Optional)
-The default server is hosted elsewhere. So unless you want to run the server locally, this section is not required.
+The deployment server is hosted at [http://52.186.137.111:8080](http://52.186.137.111:8080). So unless you want to run the server locally, this section is not required.
 
 ### Installing Dependencies
 Using [pip](https://pip.pypa.io/en/stable/). Creating a dedicated [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for the project is advised. Recommended python version `>=3.9`
@@ -90,7 +88,6 @@ As server is being setup locally, change the API URL in the client environment v
 Databases can be setup locally using docker.
 ```
 # Inside the server directory.
-
 docker-compose up -d
 ```
 Feel free to use your own databases.
@@ -101,7 +98,6 @@ Create a copy of `server/.env.example` in the same directory and name it `.env`.
 ### Running the server
 ```
 # Inside the server directory
-
 python -m src
 ```
 
