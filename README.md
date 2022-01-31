@@ -15,6 +15,19 @@ Blob System is a simple blob storage server which allows for file upload, share,
 * The server is deployed [here](http://52.186.137.111:8080) and the fastapi docs for that can be accessed [here](http://52.186.137.111:8080/docs).
 * Demo video can be found [here](https://drive.google.com/file/d/1bT7nEM7KPWKmSr3DDH1fBz9G5V-nLit0/view?usp=sharing).
 
+## Solution
+Uploaded files are stored in the local file system of the hosted server. The file and user access control information are stored in the database. 
+Files are compressed with gzip before being stored in the file server.
+
+## Features
+* Upload a file
+* Download a file
+* Rename a file
+* Edit a file
+* Change access permissions for a particular file
+* Get file information
+* File download and upload are streamed to allow large file transfers
+
 ## Setting up the environment
 
 ### Cloning the repository
