@@ -69,7 +69,7 @@ typings/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
+server/.env
 .env.test
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -111,8 +111,10 @@ dist
 ### Custom ignores
 files/
 __pycache__/
-
 *.ini
+server/venv
+client/venv
+server/alembic
 
 # Package lock
 package-lock.json
