@@ -112,6 +112,7 @@ dist
 files/
 __pycache__/
 *.ini
+*.env
 server/venv
 client/venv
 server/alembic
